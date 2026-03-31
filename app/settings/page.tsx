@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useInstances } from "@/hooks/useInstances";
 import type { N8nInstance } from "@/types";
 
+const CLAUDE_KEY = "claude_api_key";
+
 interface FormState {
   name: string;
   baseUrl: string;
@@ -31,6 +33,9 @@ export default function SettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"ok" | "error" | null>(null);
+  const [claudeKey, setClaudeKey] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem(CLAUDE_KEY) ?? "" : ""
+  );
 
   const isValid = form.name.trim() && form.baseUrl.trim() && form.apiKey.trim();
 
@@ -279,6 +284,24 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        {/* Claude API key */}
+        <div className="mt-10 space-y-3">
+          <p className="font-mono text-xs text-dim uppercase tracking-widest">
+            Clé API Claude (Anthropic)
+          </p>
+          <p className="text-dim text-xs">Utilisée pour afficher les limites d'utilisation en temps réel.</p>
+          <input
+            type="password"
+            value={claudeKey}
+            onChange={(e) => {
+              setClaudeKey(e.target.value);
+              localStorage.setItem(CLAUDE_KEY, e.target.value);
+            }}
+            placeholder="sk-ant-••••••••••••••••"
+            className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-accent transition-colors"
+          />
+        </div>
 
         {/* Webhooks info */}
         <div className="mt-10 p-4 bg-surface border border-border rounded-xl">

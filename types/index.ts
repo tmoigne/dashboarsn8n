@@ -12,6 +12,7 @@ export interface Task {
   inputType: "image" | "pdf" | "text" | "file" | "document";
   inputLabel: string;
   inputPlaceholder?: string;
+  outputFormats?: Array<{ id: string; label: string }>;
 }
 
 export interface HistoryEntry {

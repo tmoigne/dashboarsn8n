@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ConfigGuard from "@/components/ConfigGuard";
 import TaskRunner from "@/components/TaskRunner";
 import HistoryPanel from "@/components/history/HistoryPanel";
+import ClaudeUsage from "@/components/ClaudeUsage";
 import { TASKS } from "@/lib/tasks";
 import { useHistory } from "@/hooks/useHistory";
 import { useInstances } from "@/hooks/useInstances";
@@ -170,8 +171,13 @@ export default function HomePage() {
             ))}
           </div>
 
+          {/* Claude usage */}
+          <div className="mt-12">
+            <ClaudeUsage />
+          </div>
+
           {/* Footer */}
-          <div className="mt-16 pt-8 border-t border-border flex items-center gap-2">
+          <div className="mt-8 pt-8 border-t border-border flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
             <span className="font-mono text-xs text-dim">
               Connecté — webhooks actifs

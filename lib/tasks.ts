@@ -61,6 +61,10 @@ export const TASKS: Task[] = [
     inputType: "text",
     inputLabel: "Texte à classifier",
     inputPlaceholder: "Colle ton texte ou document ici...",
+    outputFormats: [
+      { id: "texte", label: "Texte" },
+      { id: "json", label: "JSON" },
+    ],
   },
   {
     id: "stats",
@@ -71,6 +75,10 @@ export const TASKS: Task[] = [
     inputType: "text",
     inputLabel: "Texte à analyser",
     inputPlaceholder: "Colle ton texte ici...",
+    outputFormats: [
+      { id: "texte", label: "Texte" },
+      { id: "json", label: "JSON" },
+    ],
   },
   {
     id: "csv-json",
@@ -110,6 +118,11 @@ export const TASKS: Task[] = [
     webhookPath: ROUTER,
     inputType: "document",
     inputLabel: "Glisse une facture (PDF ou photo)",
+    outputFormats: [
+      { id: "texte", label: "Texte" },
+      { id: "json", label: "JSON" },
+      { id: "csv", label: "CSV" },
+    ],
   },
   {
     id: "extract-form",
@@ -119,6 +132,11 @@ export const TASKS: Task[] = [
     webhookPath: ROUTER,
     inputType: "image",
     inputLabel: "Glisse une photo du carnet ou formulaire",
+    outputFormats: [
+      { id: "texte", label: "Texte" },
+      { id: "json", label: "JSON" },
+      { id: "csv", label: "CSV" },
+    ],
   },
   {
     id: "custom",

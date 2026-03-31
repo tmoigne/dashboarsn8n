@@ -86,6 +86,7 @@ export default function TaskRunner({
   const [dragging, setDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [customPath, setCustomPath] = useState(task.webhookPath);
+  const [outputFormat, setOutputFormat] = useState(task.outputFormats?.[0]?.id ?? "texte");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isFile = task.inputType === "image" || task.inputType === "pdf" || task.inputType === "file" || task.inputType === "document";
@@ -127,6 +128,7 @@ export default function TaskRunner({
               filename: file.name,
               data: base64,
               mime: file.type,
+              format: outputFormat,
             });
             results.push({ filename: file.name, status: "success", text });
             onAddHistory({
@@ -161,7 +163,7 @@ export default function TaskRunner({
             throw new Error("JSON invalide — vérifie la syntaxe du payload");
           }
         } else {
-          body = { task: task.id, text: textInput };
+          body = { task: task.id, text: textInput, format: outputFormat };
         }
 
         const path = task.id === "custom" ? customPath : task.webhookPath;
@@ -215,6 +217,29 @@ export default function TaskRunner({
         </div>
 
         <div className="p-6 space-y-5">
+          {task.outputFormats && task.outputFormats.length > 1 && (
+            <div className="space-y-2">
+              <label className="font-mono text-xs text-dim uppercase tracking-widest">
+                Format de sortie
+              </label>
+              <div className="flex gap-2">
+                {task.outputFormats.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setOutputFormat(f.id)}
+                    className={`px-3 py-1.5 rounded-lg font-mono text-xs uppercase tracking-widest transition-colors ${
+                      outputFormat === f.id
+                        ? "bg-accent text-white"
+                        : "border border-border text-dim hover:text-text hover:border-muted"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {task.id === "custom" && (
             <div className="space-y-2">
               <label className="font-mono text-xs text-dim uppercase tracking-widest">
