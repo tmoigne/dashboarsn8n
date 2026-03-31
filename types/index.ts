@@ -9,7 +9,7 @@ export interface Task {
   description: string;
   icon: string;
   webhookPath: string;
-  inputType: "image" | "pdf" | "text" | "file";
+  inputType: "image" | "pdf" | "text" | "file" | "document";
   inputLabel: string;
   inputPlaceholder?: string;
 }

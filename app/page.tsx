@@ -21,6 +21,8 @@ const ICONS: Record<string, string> = {
   Table: "⊟",
   SpellCheck: "✓",
   Globe: "◉",
+  Receipt: "◻",
+  ClipboardList: "☰",
   Zap: "⚡",
 };
 

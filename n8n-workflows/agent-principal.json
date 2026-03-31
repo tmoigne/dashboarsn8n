@@ -98,6 +98,22 @@
                 "combinator": "and"
               },
               "renameOutput": true, "outputKey": "detect-lang"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "extract-invoice", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0006-0006-0006-000000000006" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "extract-invoice"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "extract-form", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0007-0007-0007-000000000007" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "extract-form"
             }
           ]
         },
@@ -377,6 +393,101 @@
     {
       "parameters": {
         "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "apikey", "value": "helloworld" }] },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "base64Image", "value": "=data:{{ $json.body.mime }};base64,{{ $json.body.data }}" },
+            { "name": "language", "value": "fre" },
+            { "name": "isOverlayRequired", "value": "false" },
+            { "name": "OCREngine", "value": "2" },
+            { "name": "scale", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 1600],
+      "id": "inv0001-0001-0001-0001-000000000001",
+      "name": "OCR Facture"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.ParsedResults?.[0]?.ParsedText || '';\n\nconst find = (patterns) => {\n  for (const p of patterns) {\n    const m = text.match(p);\n    if (m) return (m[1] || m[0]).trim();\n  }\n  return null;\n};\n\nconst clean = (v) => v ? v.replace(/\\s+/g, ' ').trim() : null;\n\nconst data = {\n  numero_facture: find([/(?:facture|invoice|n[°o])[^\\n\\d]*([A-Z0-9\\-\\/]{4,25})/i, /N[°o][^\\n]*?([A-Z0-9\\-\\/]{4,25})/i]),\n  date: find([/(?:date)[^\\n]*?(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4})/i, /(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{4})/]),\n  fournisseur: find([/(?:de\\s*:|émetteur\\s*:|société\\s*:|vendeur\\s*:)\\s*([^\\n]{3,50})/i, /^([A-Z][A-Z\\s&]{3,40})$/m]),\n  montant_ht: find([/(?:total\\s*h\\.?t\\.?|montant\\s*h\\.?t\\.?|ht)[^\\n€$]*(\\d[\\d\\s,\\.]+)\\s*[€$]/i]),\n  tva: find([/(?:tva|vat)[^\\n€$]*(\\d[\\d\\s,\\.]+)\\s*[€$]/i, /(?:tva|vat)[^\\n]*(\\d+(?:[,.]\\d+)?)\\s*%/i]),\n  montant_ttc: find([/(?:total\\s*t\\.?t\\.?c\\.?|ttc|net\\s*à\\s*payer|total\\s*dû)[^\\n€$]*(\\d[\\d\\s,\\.]+)\\s*[€$]/i]),\n  siret: find([/(?:siret)[^\\n]*(\\d[\\d\\s]{12,14}\\d)/i]),\n  tva_numero: find([/(?:n[°o]\\s*tva|vat\\s*n[°o])[^\\n]*([A-Z]{2}[0-9]{9,13})/i])\n};\n\nconst text_brut = text.substring(0, 500);\nreturn [{ json: { ...data, texte_brut: text_brut } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [560, 1600],
+      "id": "inv0002-0002-0002-0002-000000000002",
+      "name": "Parser Facture"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '📄 DONNÉES FACTURE\\n' + '─'.repeat(30) + '\\n' + (Object.entries({ 'N° Facture': $json.numero_facture, 'Date': $json.date, 'Fournisseur': $json.fournisseur, 'Montant HT': $json.montant_ht, 'TVA': $json.tva, 'Montant TTC': $json.montant_ttc, 'SIRET': $json.siret, 'N° TVA': $json.tva_numero }).filter(([k,v]) => v).map(([k,v]) => k.padEnd(14) + ': ' + v).join('\\n')) + '\\n\\n— Texte brut OCR —\\n' + $json.texte_brut }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [800, 1600],
+      "id": "inv0003-0003-0003-0003-000000000003",
+      "name": "Répondre Facture"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "apikey", "value": "helloworld" }] },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "base64Image", "value": "=data:{{ $json.body.mime }};base64,{{ $json.body.data }}" },
+            { "name": "language", "value": "fre" },
+            { "name": "isOverlayRequired", "value": "false" },
+            { "name": "OCREngine", "value": "2" },
+            { "name": "scale", "value": "true" },
+            { "name": "detectOrientation", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 1800],
+      "id": "frm0001-0001-0001-0001-000000000001",
+      "name": "OCR Formulaire"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.ParsedResults?.[0]?.ParsedText || '';\n\nconst find = (patterns) => {\n  for (const p of patterns) {\n    const m = text.match(p);\n    if (m) return (m[1] || m[0]).trim();\n  }\n  return null;\n};\n\nconst data = {\n  nom: find([/(?:^|\\n)\\s*nom\\s*:?\\s*([A-ZÀÂÄ][a-zA-ZÀ-ÿ\\-\\s]{1,30})/im, /(?:^|\\n)\\s*name\\s*:?\\s*([A-Z][a-zA-Z\\-\\s]{1,30})/im]),\n  prenom: find([/(?:pr[eé]nom|first\\s*name)\\s*:?\\s*([A-ZÀÂÄ][a-zA-ZÀ-ÿ\\-\\s]{1,30})/im]),\n  date_naissance: find([/(?:né|naissance|birth)[^\\n]*?(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4})/i]),\n  telephone: find([/((?:\\+33|0)[1-9](?:[\\s\\.\\-]?\\d{2}){4})/]),\n  email: find([/([a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,})/]),\n  adresse: find([/(?:adresse|address)\\s*:?\\s*([^\\n]{10,80})/i, /(?:\\d+[,\\s]+(?:rue|avenue|boulevard|allée|place|impasse)[^\\n]{5,60})/i]),\n  code_postal: find([/\\b(\\d{5})\\b/]),\n  ville: find([/(?:ville|city)\\s*:?\\s*([A-ZÀÂÄ][a-zA-ZÀ-ÿ\\-\\s]{2,30})/im, /\\d{5}\\s+([A-ZÀÂÄ][a-zA-ZÀ-ÿ\\-\\s]{2,30})/i]),\n  date: find([/(?:^|\\n)\\s*(?:date|le)\\s*:?\\s*(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4})/im])\n};\n\nconst texte_brut = text.substring(0, 600);\nreturn [{ json: { ...data, texte_brut } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [560, 1800],
+      "id": "frm0002-0002-0002-0002-000000000002",
+      "name": "Parser Formulaire"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '📋 DONNÉES FORMULAIRE\\n' + '─'.repeat(30) + '\\n' + (Object.entries({ 'Nom': $json.nom, 'Prénom': $json.prenom, 'Date naissance': $json.date_naissance, 'Téléphone': $json.telephone, 'Email': $json.email, 'Adresse': $json.adresse, 'Code postal': $json.code_postal, 'Ville': $json.ville, 'Date': $json.date }).filter(([k,v]) => v).map(([k,v]) => k.padEnd(16) + ': ' + v).join('\\n')) + '\\n\\n— Texte brut OCR —\\n' + $json.texte_brut }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [800, 1800],
+      "id": "frm0003-0003-0003-0003-000000000003",
+      "name": "Répondre Formulaire"
+    },
+    {
+      "parameters": {
+        "method": "POST",
         "url": "https://router.huggingface.co/hf-inference/models/facebook/bart-large-mnli",
         "sendHeaders": true,
         "headerParameters": {
@@ -433,7 +544,9 @@
         [{ "node": "Statistiques", "type": "main", "index": 0 }],
         [{ "node": "CSV vers JSON", "type": "main", "index": 0 }],
         [{ "node": "LanguageTool", "type": "main", "index": 0 }],
-        [{ "node": "Detect Lang", "type": "main", "index": 0 }]
+        [{ "node": "Detect Lang", "type": "main", "index": 0 }],
+        [{ "node": "OCR Facture", "type": "main", "index": 0 }],
+        [{ "node": "OCR Formulaire", "type": "main", "index": 0 }]
       ]
     },
     "OCR Image": { "main": [[{ "node": "Répondre OCR", "type": "main", "index": 0 }]] },
@@ -445,7 +558,11 @@
     "Statistiques": { "main": [[{ "node": "Répondre Stats", "type": "main", "index": 0 }]] },
     "CSV vers JSON": { "main": [[{ "node": "Répondre CSV", "type": "main", "index": 0 }]] },
     "LanguageTool": { "main": [[{ "node": "Répondre Correcteur", "type": "main", "index": 0 }]] },
-    "Detect Lang": { "main": [[{ "node": "Répondre Langue", "type": "main", "index": 0 }]] }
+    "Detect Lang": { "main": [[{ "node": "Répondre Langue", "type": "main", "index": 0 }]] },
+    "OCR Facture": { "main": [[{ "node": "Parser Facture", "type": "main", "index": 0 }]] },
+    "Parser Facture": { "main": [[{ "node": "Répondre Facture", "type": "main", "index": 0 }]] },
+    "OCR Formulaire": { "main": [[{ "node": "Parser Formulaire", "type": "main", "index": 0 }]] },
+    "Parser Formulaire": { "main": [[{ "node": "Répondre Formulaire", "type": "main", "index": 0 }]] }
   },
   "active": true,
   "settings": { "executionOrder": "v1" },

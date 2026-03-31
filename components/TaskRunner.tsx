@@ -88,7 +88,7 @@ export default function TaskRunner({
   const [customPath, setCustomPath] = useState(task.webhookPath);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const isFile = task.inputType === "image" || task.inputType === "pdf" || task.inputType === "file";
+  const isFile = task.inputType === "image" || task.inputType === "pdf" || task.inputType === "file" || task.inputType === "document";
 
   const updateFiles = useCallback((newFiles: File[]) => {
     setFiles(newFiles);
@@ -257,6 +257,8 @@ export default function TaskRunner({
                       ? "image/*"
                       : task.inputType === "file"
                       ? ".csv,.txt,.json,.tsv"
+                      : task.inputType === "document"
+                      ? "image/*,application/pdf"
                       : "application/pdf"
                   }
                   onChange={(e) =>
