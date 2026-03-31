@@ -6,6 +6,7 @@ import ConfigGuard from "@/components/ConfigGuard";
 import TaskRunner from "@/components/TaskRunner";
 import HistoryPanel from "@/components/history/HistoryPanel";
 import ClaudeUsage from "@/components/ClaudeUsage";
+import UsageStats from "@/components/UsageStats";
 import { TASKS } from "@/lib/tasks";
 import { useHistory } from "@/hooks/useHistory";
 import { useInstances } from "@/hooks/useInstances";
@@ -171,8 +172,9 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Claude usage */}
-          <div className="mt-12">
+          {/* Stats + Claude usage */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <UsageStats history={history} />
             <ClaudeUsage />
           </div>
 
