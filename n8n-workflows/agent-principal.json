@@ -1,0 +1,459 @@
+{
+  "name": "Agent Principal — Dashboard n8n",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "router",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-200, 400],
+      "id": "58aa1b8c-2888-421f-9c00-d759292bbf5c",
+      "name": "Webhook",
+      "webhookId": "80b9acf1-c52d-4047-8bdf-4158b555067a"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "ocr-image", "operator": { "type": "string", "operation": "equals" }, "id": "e6926093-2b8d-4e98-b029-b8383875eb17" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "ocr-image"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "extract-pdf", "operator": { "type": "string", "operation": "equals" }, "id": "090c72b6-b826-4971-9a5e-7c02f3418b56" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "extract-pdf"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "extract-file", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0001-0001-0001-000000000001" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "extract-file"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "summarize", "operator": { "type": "string", "operation": "equals" }, "id": "990162cd-1c28-4436-bead-fd8e95a49854" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "summarize"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "translate", "operator": { "type": "string", "operation": "equals" }, "id": "e1e9f8d6-ad64-4d3b-956e-81af3a4e2d52" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "translate"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "classify", "operator": { "type": "string", "operation": "equals" }, "id": "23df8742-374b-4376-af45-9d57988275fc" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "classify"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "stats", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0002-0002-0002-000000000002" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "stats"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "csv-json", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0003-0003-0003-000000000003" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "csv-json"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "spellcheck", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0004-0004-0004-000000000004" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "spellcheck"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [{ "leftValue": "={{ $json.body.task }}", "rightValue": "detect-lang", "operator": { "type": "string", "operation": "equals" }, "id": "a1b2c3d4-0005-0005-0005-000000000005" }],
+                "combinator": "and"
+              },
+              "renameOutput": true, "outputKey": "detect-lang"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [60, 400],
+      "id": "9f126a76-5e8a-44e3-bbda-2a68cc80f779",
+      "name": "Router"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "apikey", "value": "helloworld" }] },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "base64Image", "value": "=data:{{ $json.body.mime }};base64,{{ $json.body.data }}" },
+            { "name": "language", "value": "fre" },
+            { "name": "isOverlayRequired", "value": "false" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, -400],
+      "id": "479d141f-81cc-4dda-8049-de63fc2d92cc",
+      "name": "OCR Image"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.ParsedResults[0].ParsedText.split(/\\r\\n|\\r|\\n/).filter(l => l.trim()).join('\\n') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, -400],
+      "id": "c8d906ca-fd90-494f-85ba-0c2e36af3645",
+      "name": "Répondre OCR"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "apikey", "value": "helloworld" }] },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "base64Image", "value": "=data:{{ $json.body.mime }};base64,{{ $json.body.data }}" },
+            { "name": "language", "value": "fre" },
+            { "name": "isOverlayRequired", "value": "false" },
+            { "name": "filetype", "value": "PDF" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, -200],
+      "id": "5bd8d674-a8ab-45d5-b483-a1d70ed2b068",
+      "name": "Extract PDF"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.ParsedResults[0].ParsedText.split(/\\r\\n|\\r|\\n/).filter(l => l.trim()).join('\\n') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, -200],
+      "id": "72a38197-c5ec-4591-a54f-c94d118d8c03",
+      "name": "Répondre PDF"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const filename = $json.body.filename || '';\nconst mime = $json.body.mime || '';\nconst raw = Buffer.from($json.body.data, 'base64').toString('utf-8');\n\nif (mime === 'application/json' || filename.endsWith('.json')) {\n  const parsed = JSON.parse(raw);\n  return [{ json: { result: JSON.stringify(parsed, null, 2), type: 'JSON', lines: raw.split('\\n').length } }];\n}\n\nif (mime === 'text/tab-separated-values' || filename.endsWith('.tsv')) {\n  const lines = raw.trim().split('\\n').filter(l => l.trim());\n  const headers = lines[0].split('\\t').map(h => h.trim());\n  const rows = lines.slice(1).map(line => {\n    const values = line.split('\\t').map(v => v.trim());\n    return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i] ?? '' }), {});\n  });\n  return [{ json: { result: JSON.stringify(rows, null, 2), type: 'TSV', rows: rows.length, cols: headers.length } }];\n}\n\nif (mime === 'text/csv' || filename.endsWith('.csv')) {\n  const lines = raw.trim().split('\\n').filter(l => l.trim());\n  const headers = lines[0].split(',').map(h => h.trim().replace(/^\"|\"$/g, ''));\n  const rows = lines.slice(1).map(line => {\n    const values = line.match(/(?:\"[^\"]*\"|[^,]+)/g)?.map(v => v.trim().replace(/^\"|\"$/g, '')) ?? [];\n    return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i] ?? '' }), {});\n  });\n  return [{ json: { result: JSON.stringify(rows, null, 2), type: 'CSV', rows: rows.length, cols: headers.length } }];\n}\n\nreturn [{ json: { result: raw, type: 'TXT', lines: raw.split('\\n').length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 0],
+      "id": "b1c2d3e4-0001-0001-0001-000000000001",
+      "name": "Extract File"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '[ ' + $json.type + ' — ' + ($json.rows !== undefined ? $json.rows + ' lignes × ' + $json.cols + ' colonnes' : $json.lines + ' lignes') + ' ]\\n\\n' + $json.result }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 0],
+      "id": "b1c2d3e4-0002-0002-0002-000000000002",
+      "name": "Répondre Fichier"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer VOTRE_TOKEN_HUGGINGFACE" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"inputs\": $json.body.text.substring(0, 3000), \"parameters\": { \"truncation\": \"only_first\", \"max_length\": 200 } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 200],
+      "id": "1f3c80cf-4fec-47bf-b7ea-2c9e6cc24e8a",
+      "name": "HuggingFace Résumé"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.summary_text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 200],
+      "id": "87c69c02-d0b0-490d-a4fe-a709c88f4557",
+      "name": "Répondre Résumé"
+    },
+
+    {
+      "parameters": {
+        "url": "https://api.mymemory.translated.net/get",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q", "value": "={{ $json.body.text }}" },
+            { "name": "langpair", "value": "fr|en" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 400],
+      "id": "092d4ef2-1ce3-4266-b805-4c9f11bbefe9",
+      "name": "MyMemory Traduction"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.responseData.translatedText }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 400],
+      "id": "3493696f-060c-45fe-9bfd-8c08873e631d",
+      "name": "Répondre Traduction"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const text = $json.body.text;\n\nconst words = text.trim().split(/\\s+/).filter(w => w.length > 0);\nconst sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);\nconst paragraphs = text.split(/\\n\\n+/).filter(p => p.trim().length > 0);\nconst chars = text.length;\nconst charsNoSpace = text.replace(/\\s/g, '').length;\nconst readingTime = Math.max(1, Math.ceil(words.length / 200));\n\nreturn [{ json: { words: words.length, chars, charsNoSpace, sentences: sentences.length, paragraphs: paragraphs.length, readingTime } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 600],
+      "id": "c1d2e3f4-0001-0001-0001-000000000001",
+      "name": "Statistiques"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '📊 Statistiques du texte\\n\\n• Mots         : ' + $json.words + '\\n• Caractères   : ' + $json.chars + ' (' + $json.charsNoSpace + ' sans espaces)\\n• Phrases      : ' + $json.sentences + '\\n• Paragraphes  : ' + $json.paragraphs + '\\n• Lecture      : ~' + $json.readingTime + ' min' }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 600],
+      "id": "c1d2e3f4-0002-0002-0002-000000000002",
+      "name": "Répondre Stats"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const text = $json.body.text.trim();\nif (!text) return [{ json: { result: '[]', rows: 0, cols: 0 } }];\n\nconst lines = text.split('\\n').filter(l => l.trim());\nconst sep = lines[0].includes('\\t') ? '\\t' : ',';\nconst headers = lines[0].split(sep).map(h => h.trim().replace(/^\"|\"$/g, ''));\n\nconst rows = lines.slice(1).map(line => {\n  let values;\n  if (sep === ',') {\n    values = line.match(/(?:\"[^\"]*\"|[^,]+)/g)?.map(v => v.trim().replace(/^\"|\"$/g, '')) ?? [];\n  } else {\n    values = line.split('\\t').map(v => v.trim());\n  }\n  return headers.reduce((obj, h, i) => ({ ...obj, [h]: values[i] ?? '' }), {});\n});\n\nreturn [{ json: { result: JSON.stringify(rows, null, 2), rows: rows.length, cols: headers.length, headers } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 800],
+      "id": "d1e2f3a4-0001-0001-0001-000000000001",
+      "name": "CSV vers JSON"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '[ CSV → JSON — ' + $json.rows + ' lignes × ' + $json.cols + ' colonnes ]\\nColonnes : ' + $json.headers.join(', ') + '\\n\\n' + $json.result }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 800],
+      "id": "d1e2f3a4-0002-0002-0002-000000000002",
+      "name": "Répondre CSV"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.languagetool.org/v2/check",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "text", "value": "={{ $json.body.text }}" },
+            { "name": "language", "value": "fr" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 1000],
+      "id": "e1f2a3b4-0001-0001-0001-000000000001",
+      "name": "LanguageTool"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.matches.length === 0 ? '✓ Aucune erreur détectée' : $json.matches.length + ' erreur(s) trouvée(s)\\n\\n' + $json.matches.map(m => '• \"' + m.context.text.substring(m.context.offset, m.context.offset + m.context.length) + '\"' + (m.replacements.length > 0 ? ' → ' + m.replacements[0].value : '') + '\\n  ' + m.message).join('\\n\\n') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 1000],
+      "id": "e1f2a3b4-0002-0002-0002-000000000002",
+      "name": "Répondre Correcteur"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const text = $json.body.text.toLowerCase();\n\nconst langs = [\n  { name: 'Français', words: ['le','la','les','de','du','et','en','est','que','qui','dans','sur','avec','pour','par','au','une','des','ce','se','son','cette','mais','plus','aussi','comme','bien','très','tout','être'] },\n  { name: 'Anglais', words: ['the','is','are','was','were','have','has','been','will','would','this','that','with','from','they','their','there','which','about','when','what','said','can','could','should','one','all','not','but','had'] },\n  { name: 'Espagnol', words: ['el','la','los','las','de','del','en','es','que','con','por','para','una','este','esta','pero','más','como','todo','cuando','desde','tiene','entre','también','mismo','sobre','cada','otro','sería'] },\n  { name: 'Allemand', words: ['der','die','das','und','in','von','zu','den','des','mit','ist','für','auf','dem','nicht','als','ein','eine','sich','auch','war','noch','eine','durch','werden','nach','hier','wird','aber','oder'] },\n  { name: 'Italien', words: ['il','la','le','di','della','in','che','per','un','una','nel','con','non','più','anche','come','della','sono','questo','questa','hanno','tutto','loro','parte','suo','sua','stato','può'] }\n];\n\nconst scores = langs.map(lang => ({\n  name: lang.name,\n  score: lang.words.filter(w => new RegExp('\\\\b' + w + '\\\\b').test(text)).length\n})).sort((a, b) => b.score - a.score);\n\nconst total = scores.reduce((s, l) => s + l.score, 0) || 1;\nconst top = scores[0];\n\nreturn [{ json: { detected: top.name, confidence: Math.round((top.score / total) * 100), scores } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 1200],
+      "id": "f1a2b3c4-0001-0001-0001-000000000001",
+      "name": "Detect Lang"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '🌐 Langue détectée : ' + $json.detected + ' (' + $json.confidence + '% de confiance)\\n\\nDétail :\\n' + $json.scores.map(s => '• ' + s.name + ' : ' + s.score + ' marqueurs').join('\\n') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 1200],
+      "id": "f1a2b3c4-0002-0002-0002-000000000002",
+      "name": "Répondre Langue"
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/facebook/bart-large-mnli",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer VOTRE_TOKEN_HUGGINGFACE" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"inputs\": $json.body.text, \"parameters\": { \"candidate_labels\": [\"commercial\", \"juridique\", \"technique\", \"financier\", \"médical\", \"personnel\", \"administratif\"] } } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 1400],
+      "id": "a07e885e-8487-4857-847f-870e314104b7",
+      "name": "Classification"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.body.slice(0,3).map(item => '• ' + item.label + ' : ' + (item.score*100).toFixed(0) + '%').join('\\n') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [560, 1400],
+      "id": "6cce8679-e814-4f87-98ef-109ab3320a82",
+      "name": "Répondre Classification"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Router", "type": "main", "index": 0 }]]
+    },
+    "Router": {
+      "main": [
+        [{ "node": "OCR Image", "type": "main", "index": 0 }],
+        [{ "node": "Extract PDF", "type": "main", "index": 0 }],
+        [{ "node": "Extract File", "type": "main", "index": 0 }],
+        [{ "node": "HuggingFace Résumé", "type": "main", "index": 0 }],
+        [{ "node": "MyMemory Traduction", "type": "main", "index": 0 }],
+        [{ "node": "Classification", "type": "main", "index": 0 }],
+        [{ "node": "Statistiques", "type": "main", "index": 0 }],
+        [{ "node": "CSV vers JSON", "type": "main", "index": 0 }],
+        [{ "node": "LanguageTool", "type": "main", "index": 0 }],
+        [{ "node": "Detect Lang", "type": "main", "index": 0 }]
+      ]
+    },
+    "OCR Image": { "main": [[{ "node": "Répondre OCR", "type": "main", "index": 0 }]] },
+    "Extract PDF": { "main": [[{ "node": "Répondre PDF", "type": "main", "index": 0 }]] },
+    "Extract File": { "main": [[{ "node": "Répondre Fichier", "type": "main", "index": 0 }]] },
+    "HuggingFace Résumé": { "main": [[{ "node": "Répondre Résumé", "type": "main", "index": 0 }]] },
+    "MyMemory Traduction": { "main": [[{ "node": "Répondre Traduction", "type": "main", "index": 0 }]] },
+    "Classification": { "main": [[{ "node": "Répondre Classification", "type": "main", "index": 0 }]] },
+    "Statistiques": { "main": [[{ "node": "Répondre Stats", "type": "main", "index": 0 }]] },
+    "CSV vers JSON": { "main": [[{ "node": "Répondre CSV", "type": "main", "index": 0 }]] },
+    "LanguageTool": { "main": [[{ "node": "Répondre Correcteur", "type": "main", "index": 0 }]] },
+    "Detect Lang": { "main": [[{ "node": "Répondre Langue", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "9ec017c5-96c7-4b78-bac7-3474f5ff23f6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "db7226f0e75c8049ad6d45ec7c04da9b90d79c8b25d32272a66ca65ff3aac5c6"
+  },
+  "id": "xNKTdw7Xe9J3iNMQ",
+  "tags": []
+}
