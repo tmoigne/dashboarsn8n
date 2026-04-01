@@ -66,7 +66,7 @@ export default function HomePage() {
     <ConfigGuard>
       <div className="min-h-screen bg-bg">
         {/* Header fixe */}
-        <header className="sticky top-0 z-30 bg-surface border-b border-border h-12 flex items-center justify-between px-6">
+        <header className="sticky top-0 z-50 bg-surface border-b border-border h-12 flex items-center justify-between px-6">
           <span className="font-mono text-sm text-text font-semibold">
             Tableau de bord
           </span>

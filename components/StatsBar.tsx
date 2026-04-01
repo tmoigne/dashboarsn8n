@@ -19,7 +19,7 @@ export default function StatsBar({ history, instanceName }: StatsBarProps) {
       })
     : "—";
 
-  const stats = [
+  const stats: { label: string; value: string; green?: boolean }[] = [
     { label: "Tâches exécutées", value: String(total) },
     { label: "Taux de succès", value: total > 0 ? `${rate}%` : "—", green: rate >= 90 },
     { label: "Dernière exécution", value: lastStr },
