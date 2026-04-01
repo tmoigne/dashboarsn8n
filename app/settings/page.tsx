@@ -91,28 +91,15 @@ export default function SettingsPage() {
   const showForm = editingId !== null || instances.length === 0;
 
   return (
-    <div className="min-h-screen bg-bg p-6">
-      <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-accent font-mono text-2xl">⚡</span>
-            <span className="font-mono text-sm text-dim uppercase tracking-widest">
-              Occitinfo / n8n
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-text">Configuration</h1>
-            {instances.length > 0 && (
-              <button
-                onClick={() => router.push("/")}
-                className="font-mono text-xs text-dim hover:text-text transition-colors uppercase tracking-widest"
-              >
-                ← Retour
-              </button>
-            )}
-          </div>
-          <p className="text-dim text-sm mt-2">
+    <div className="min-h-screen bg-bg">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-surface border-b border-border h-12 flex items-center px-6">
+        <span className="font-mono text-sm text-text font-semibold">Paramètres</span>
+      </header>
+
+      <main className="max-w-lg mx-auto px-6 py-8">
+        <div className="mb-8">
+          <p className="text-dim text-sm">
             Gère tes instances n8n. Chaque instance a sa propre URL et clé API.
           </p>
         </div>
@@ -128,7 +115,7 @@ export default function SettingsPage() {
                 key={inst.id}
                 className={`p-4 rounded-xl border transition-colors ${
                   inst.id === activeInstance?.id
-                    ? "border-accent/40 bg-accent/5"
+                    ? "border-green/40 bg-green/5"
                     : "border-border bg-surface"
                 }`}
               >
@@ -136,7 +123,7 @@ export default function SettingsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       {inst.id === activeInstance?.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-green flex-shrink-0" />
                       )}
                       <p className="font-semibold text-text text-sm">
                         {inst.name}
@@ -150,7 +137,7 @@ export default function SettingsPage() {
                     {inst.id !== activeInstance?.id && (
                       <button
                         onClick={() => switchTo(inst.id)}
-                        className="font-mono text-xs text-dim hover:text-accent transition-colors"
+                        className="font-mono text-xs text-dim hover:text-green transition-colors"
                       >
                         Activer
                       </button>
@@ -205,7 +192,7 @@ export default function SettingsPage() {
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
                 placeholder="Production, Local, Test..."
-                className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
               />
             </div>
 
@@ -220,7 +207,7 @@ export default function SettingsPage() {
                   setForm((f) => ({ ...f, baseUrl: e.target.value }))
                 }
                 placeholder="https://n8n.mondomaine.com"
-                className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
               />
               <p className="font-mono text-xs text-dim/60">
                 Sans slash final — ex: http://192.168.1.50:5678
@@ -238,7 +225,7 @@ export default function SettingsPage() {
                   setForm((f) => ({ ...f, apiKey: e.target.value }))
                 }
                 placeholder="••••••••••••••••"
-                className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
               />
             </div>
 
@@ -269,7 +256,7 @@ export default function SettingsPage() {
               <button
                 onClick={handleSave}
                 disabled={!isValid}
-                className="flex-1 bg-accent hover:bg-orange-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors font-mono text-sm uppercase tracking-widest"
+                className="flex-1 bg-green-dark hover:bg-green disabled:opacity-30 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors font-mono text-sm uppercase tracking-widest"
               >
                 {editingId ? "Mettre à jour" : "Ajouter"}
               </button>
@@ -299,7 +286,7 @@ export default function SettingsPage() {
               localStorage.setItem(CLAUDE_KEY, e.target.value);
             }}
             placeholder="sk-ant-••••••••••••••••"
-            className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
           />
         </div>
 
@@ -316,7 +303,7 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
