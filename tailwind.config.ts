@@ -21,6 +21,7 @@ const config: Config = {
         green: "#3fb950",
         "green-dark": "#238636",
         muted: "#21262d",
+        accent: "#3fb950",  // temporary alias — remove after full migration
       },
     },
   },

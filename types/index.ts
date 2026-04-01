@@ -32,7 +32,7 @@ export interface N8nInstance {
   apiKey: string;
 }
 
-// Ajouter à la fin de types/index.ts
+// ── Email Builder ─────────────────────────────────────────────────────────────
 
 export type EmailBlockType =
   | "header"
@@ -118,11 +118,14 @@ export type EmailBlockProps =
   | NoteBlockProps
   | FooterBlockProps;
 
-export interface EmailBlock {
-  id: string;
-  type: EmailBlockType;
-  props: EmailBlockProps;
-}
+export type EmailBlock =
+  | { id: string; type: "header";     props: HeaderBlockProps }
+  | { id: string; type: "hero-image"; props: HeroImageBlockProps }
+  | { id: string; type: "intro-text"; props: IntroTextBlockProps }
+  | { id: string; type: "two-cards";  props: TwoCardsBlockProps }
+  | { id: string; type: "double-cta"; props: DoubleCTABlockProps }
+  | { id: string; type: "note";       props: NoteBlockProps }
+  | { id: string; type: "footer";     props: FooterBlockProps };
 
 export interface EmailTemplate {
   id: string;
