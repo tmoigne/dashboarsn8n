@@ -30,7 +30,7 @@ export default function Sidebar() {
               className={`flex items-center gap-3 px-2 py-2 rounded-md transition-colors whitespace-nowrap ${
                 active
                   ? "bg-muted border-l-2 border-green text-text"
-                  : "text-dim hover:text-text hover:bg-muted"
+                  : "border-l-2 border-transparent text-dim hover:text-text hover:bg-muted"
               }`}
             >
               <span className="text-base flex-shrink-0 w-5 text-center">
