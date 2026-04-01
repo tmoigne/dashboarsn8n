@@ -31,3 +31,102 @@ export interface N8nInstance {
   baseUrl: string;
   apiKey: string;
 }
+
+// Ajouter à la fin de types/index.ts
+
+export type EmailBlockType =
+  | "header"
+  | "hero-image"
+  | "intro-text"
+  | "two-cards"
+  | "double-cta"
+  | "note"
+  | "footer";
+
+export interface HeaderBlockProps {
+  bgColor: string;
+  logoLeftUrl: string;
+  logoLeftHref: string;
+  logoRightUrl: string;
+  logoRightHref: string;
+  showDivider: boolean;
+  borderRadius: number;
+}
+
+export interface HeroImageBlockProps {
+  imageUrl: string;
+  altText: string;
+}
+
+export interface IntroTextBlockProps {
+  content: string;
+  align: "left" | "center" | "right";
+}
+
+export interface CardItem {
+  bgColor: string;
+  headerBgColor: string;
+  headerBorderColor: string;
+  logoUrl: string;
+  amountText: string;
+  amountColor: string;
+  subtitle: string;
+  details: string[];
+  ctaLabel: string;
+  ctaHref: string;
+  ctaBgColor: string;
+  ctaTextColor: string;
+}
+
+export interface TwoCardsBlockProps {
+  left: CardItem;
+  right: CardItem;
+  cumulableNote: string;
+}
+
+export interface DoubleCTABlockProps {
+  title: string;
+  subtitle: string;
+  ctaLeft: { label: string; href: string; bgColor: string; textColor: string };
+  ctaRight: { label: string; href: string; bgColor: string; textColor: string };
+}
+
+export interface NoteBlockProps {
+  content: string;
+  bgColor: string;
+  borderColor: string;
+  emoji: string;
+}
+
+export interface FooterBlockProps {
+  bgColor: string;
+  logoLeftUrl: string;
+  logoLeftHref: string;
+  logoRightUrl: string;
+  logoRightHref: string;
+  contactText: string;
+  unsubscribeLink: string;
+  borderRadius: number;
+}
+
+export type EmailBlockProps =
+  | HeaderBlockProps
+  | HeroImageBlockProps
+  | IntroTextBlockProps
+  | TwoCardsBlockProps
+  | DoubleCTABlockProps
+  | NoteBlockProps
+  | FooterBlockProps;
+
+export interface EmailBlock {
+  id: string;
+  type: EmailBlockType;
+  props: EmailBlockProps;
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  blocks: EmailBlock[];
+  updatedAt: number;
+}
