@@ -7,6 +7,7 @@ import TaskRunner from "@/components/TaskRunner";
 import HistoryPanel from "@/components/history/HistoryPanel";
 import ClaudeUsage from "@/components/ClaudeUsage";
 import UsageStats from "@/components/UsageStats";
+import StatsBar from "@/components/StatsBar";
 import { TASKS } from "@/lib/tasks";
 import { useHistory } from "@/hooks/useHistory";
 import { useInstances } from "@/hooks/useInstances";
@@ -26,6 +27,22 @@ const ICONS: Record<string, string> = {
   Receipt: "◻",
   ClipboardList: "☰",
   Zap: "⚡",
+};
+
+const CATEGORY: Record<string, string> = {
+  "ocr-image": "IMAGE",
+  "extract-pdf": "PDF",
+  "extract-file": "FICHIER",
+  summarize: "TEXTE",
+  translate: "TEXTE",
+  classify: "TEXTE",
+  stats: "TEXTE",
+  "csv-json": "DONNÉES",
+  spellcheck: "TEXTE",
+  "detect-lang": "TEXTE",
+  "extract-invoice": "DOCUMENT",
+  "extract-form": "IMAGE",
+  custom: "WEBHOOK",
 };
 
 export default function HomePage() {
@@ -48,28 +65,24 @@ export default function HomePage() {
   return (
     <ConfigGuard>
       <div className="min-h-screen bg-bg">
-        {/* Topbar */}
-        <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            <span className="font-mono text-sm text-text tracking-widest uppercase">
-              Occitinfo / n8n
-            </span>
-          </div>
+        {/* Header fixe */}
+        <header className="sticky top-0 z-30 bg-surface border-b border-border h-12 flex items-center justify-between px-6">
+          <span className="font-mono text-sm text-text font-semibold">
+            Tableau de bord
+          </span>
           <div className="flex items-center gap-4">
-            {/* Instance switcher */}
             {instances.length > 0 && (
               <div className="relative">
                 <button
                   onClick={() => setShowInstanceMenu((v) => !v)}
-                  className="flex items-center gap-2 font-mono text-xs text-dim hover:text-text transition-colors uppercase tracking-widest"
+                  className="flex items-center gap-2 font-mono text-xs text-dim hover:text-text transition-colors"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-green" />
                   {activeInstance?.name ?? "Instance"}
                   <span className="text-dim/40">▾</span>
                 </button>
                 {showInstanceMenu && (
-                  <div className="absolute right-0 top-6 mt-1 w-56 bg-surface border border-border rounded-xl overflow-hidden z-50 shadow-xl">
+                  <div className="absolute right-0 top-6 mt-1 w-56 bg-surface border border-border rounded-lg overflow-hidden z-50 shadow-xl">
                     {instances.map((inst) => (
                       <button
                         key={inst.id}
@@ -78,9 +91,7 @@ export default function HomePage() {
                           setShowInstanceMenu(false);
                         }}
                         className={`w-full text-left px-4 py-3 font-mono text-xs transition-colors hover:bg-muted ${
-                          inst.id === activeInstance?.id
-                            ? "text-accent"
-                            : "text-dim"
+                          inst.id === activeInstance?.id ? "text-green" : "text-dim"
                         }`}
                       >
                         {inst.name}
@@ -104,20 +115,13 @@ export default function HomePage() {
                 )}
               </div>
             )}
-
-            <button
-              onClick={() => router.push("/settings")}
-              className="font-mono text-xs text-dim hover:text-text transition-colors uppercase tracking-widest"
-            >
-              Config
-            </button>
             <button
               onClick={() => setShowHistory((v) => !v)}
-              className="relative font-mono text-xs text-dim hover:text-text transition-colors uppercase tracking-widest"
+              className="relative font-mono text-xs text-dim hover:text-text transition-colors"
             >
               Historique
               {history.length > 0 && (
-                <span className="absolute -top-1 -right-3 w-4 h-4 rounded-full bg-accent text-white text-[9px] flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-3 w-4 h-4 rounded-full bg-green-dark text-white text-[9px] flex items-center justify-center font-bold">
                   {history.length > 9 ? "9+" : history.length}
                 </span>
               )}
@@ -125,21 +129,20 @@ export default function HomePage() {
           </div>
         </header>
 
-        <main className="max-w-5xl mx-auto px-6 py-12">
-          {/* Hero */}
-          <div className="mb-14">
-            <h1 className="text-4xl font-semibold text-text mb-3 tracking-tight">
-              Automatisation
-              <span className="text-accent"> n8n</span>
-            </h1>
-            <p className="text-dim font-sans text-base max-w-md">
-              Sélectionne une tâche ci-dessous. Le fichier ou texte sera envoyé
-              au workflow n8n correspondant.
-            </p>
+        <main className="max-w-5xl mx-auto px-6 py-8">
+          <StatsBar history={history} instanceName={activeInstance?.name ?? null} />
+
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-mono text-xs text-dim uppercase tracking-widest">
+              Tâches disponibles — {TASKS.length}
+            </h2>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green" />
+              <span className="font-mono text-xs text-dim">Webhooks actifs</span>
+            </span>
           </div>
 
-          {/* Task grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {TASKS.map((task) => (
               <button
                 key={task.id}
@@ -147,24 +150,27 @@ export default function HomePage() {
                   setInitialText("");
                   setActiveTask(task);
                 }}
-                className="group text-left bg-surface border border-border hover:border-accent/40 rounded-2xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/5"
+                className="group text-left bg-surface border border-border hover:border-green/40 rounded-lg p-4 transition-all duration-150 hover:bg-muted"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <span className="text-2xl text-accent/80 font-mono group-hover:text-accent transition-colors">
-                    {ICONS[task.icon] ?? "◆"}
-                  </span>
-                  <span className="font-mono text-xs text-dim/60 bg-bg px-2 py-0.5 rounded-full">
-                    {task.inputType.toUpperCase()}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green flex-shrink-0" />
+                    <span className="font-mono text-base text-text/70 group-hover:text-green transition-colors">
+                      {ICONS[task.icon] ?? "◆"}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[10px] text-dim bg-bg border border-border px-2 py-0.5 rounded-full">
+                    {CATEGORY[task.id] ?? task.inputType.toUpperCase()}
                   </span>
                 </div>
-                <h3 className="font-semibold text-text text-base mb-1.5">
+                <h3 className="font-semibold text-text text-sm mb-1">
                   {task.label}
                 </h3>
-                <p className="text-dim text-sm leading-relaxed">
+                <p className="text-dim text-xs leading-relaxed line-clamp-2">
                   {task.description}
                 </p>
-                <div className="mt-4 pt-4 border-t border-border">
-                  <p className="font-mono text-xs text-dim/60 truncate">
+                <div className="mt-3 pt-3 border-t border-border">
+                  <p className="font-mono text-[10px] text-dim/50 truncate">
                     {task.webhookPath}
                   </p>
                 </div>
@@ -172,22 +178,12 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Stats + Claude usage */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <UsageStats history={history} />
             <ClaudeUsage />
           </div>
-
-          {/* Footer */}
-          <div className="mt-8 pt-8 border-t border-border flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            <span className="font-mono text-xs text-dim">
-              Connecté — webhooks actifs
-            </span>
-          </div>
         </main>
 
-        {/* History panel */}
         {showHistory && (
           <HistoryPanel
             history={history}
@@ -197,7 +193,6 @@ export default function HomePage() {
           />
         )}
 
-        {/* Task modal */}
         {activeTask && (
           <TaskRunner
             task={activeTask}
