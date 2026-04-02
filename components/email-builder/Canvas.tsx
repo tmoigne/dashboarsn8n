@@ -65,14 +65,14 @@ function SortableBlock({ block, index, total, selected, onSelect, onMoveUp, onMo
     <div
       ref={setNodeRef}
       style={style}
-      className="relative cursor-pointer"
+      className="relative cursor-pointer group"
       onClick={() => onSelect(block.id)}
     >
       {/* Drag handle */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-1 left-1 z-10 bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded cursor-grab active:cursor-grabbing opacity-0 hover:opacity-100 transition-opacity"
+        className="absolute top-1 left-1 z-10 bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => e.stopPropagation()}
         title="Glisser pour réordonner"
       >
@@ -120,7 +120,7 @@ interface Props {
 
 export default function Canvas({ blocks, selectedId, onSelect, onMoveUp, onMoveDown, onRemove, onReorder }: Props) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -129,6 +129,7 @@ export default function Canvas({ blocks, selectedId, onSelect, onMoveUp, onMoveD
     if (!over || active.id === over.id) return;
     const oldIndex = blocks.findIndex(b => b.id === active.id);
     const newIndex = blocks.findIndex(b => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
     onReorder(arrayMove(blocks, oldIndex, newIndex));
   }
 
