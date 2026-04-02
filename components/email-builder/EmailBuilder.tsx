@@ -95,6 +95,10 @@ export default function EmailBuilder() {
     });
   }, []);
 
+  const reorder = useCallback((newBlocks: EmailBlock[]) => {
+    setBlocks(newBlocks);
+  }, []);
+
   const handleSaveTemplate = () => {
     const name = prompt("Nom du template :", emailName);
     if (!name) return;
@@ -173,6 +177,7 @@ export default function EmailBuilder() {
           onMoveUp={moveUp}
           onMoveDown={moveDown}
           onRemove={removeBlock}
+          onReorder={reorder}
         />
         <ConfigPanel block={selectedBlock} onChange={updateBlock} />
       </div>
