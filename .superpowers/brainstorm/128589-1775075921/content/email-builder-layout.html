@@ -1,0 +1,188 @@
+<h2>Layout de l'Email Builder</h2>
+<p class="subtitle">Interface à 3 colonnes — blocs disponibles | canvas prévisualisation | configuration du bloc sélectionné</p>
+
+<div class="mockup" style="max-width:900px;margin:0 auto;">
+  <div class="mockup-header">Email Builder — Aperçu du layout</div>
+  <div class="mockup-body" style="padding:0;background:#0d1117;border-radius:0 0 8px 8px;overflow:hidden;">
+
+    <!-- Top toolbar -->
+    <div style="background:#161b22;border-bottom:1px solid #30363d;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="color:#c9d1d9;font-size:12px;font-weight:600;font-family:monospace;">← Dashboard</span>
+        <span style="color:#30363d;">|</span>
+        <span style="color:#c9d1d9;font-size:12px;font-family:monospace;">✉ Email Builder</span>
+        <span style="background:#238636;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;">NOUVEAU</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:5px 12px;cursor:pointer;">
+          <span style="color:#8b949e;font-size:11px;font-family:monospace;">👁 Prévisualiser</span>
+        </div>
+        <div style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:5px 12px;">
+          <span style="color:#8b949e;font-size:11px;font-family:monospace;">📋 Copier HTML</span>
+        </div>
+        <div style="background:#238636;border-radius:6px;padding:5px 12px;">
+          <span style="color:#fff;font-size:11px;font-weight:600;font-family:monospace;">💾 Sauvegarder</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-column layout -->
+    <div style="display:flex;height:420px;">
+
+      <!-- LEFT: Block catalogue -->
+      <div style="width:190px;background:#161b22;border-right:1px solid #30363d;padding:12px;overflow-y:auto;flex-shrink:0;">
+        <p style="margin:0 0 8px;font-size:9px;color:#8b949e;text-transform:uppercase;letter-spacing:1.5px;font-family:monospace;">BLOCS DISPONIBLES</p>
+
+        <div style="margin-bottom:10px;">
+          <p style="margin:0 0 4px;font-size:9px;color:#3fb950;font-family:monospace;">Structure</p>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;">⬛</span><span style="font-size:10px;color:#c9d1d9;font-family:monospace;">Header / Logos</span>
+            </div>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;">🖼</span><span style="font-size:10px;color:#c9d1d9;font-family:monospace;">Hero Image</span>
+            </div>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;">📄</span><span style="font-size:10px;color:#c9d1d9;font-family:monospace;">Texte intro</span>
+            </div>
+            <div style="background:#21262d;border:1px solid #238636;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;border-left:3px solid #238636;">
+              <span style="font-size:11px;">🃏</span><span style="font-size:10px;color:#3fb950;font-family:monospace;font-weight:600;">2 Cartes côte à côte</span>
+            </div>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;">🔘</span><span style="font-size:10px;color:#c9d1d9;font-family:monospace;">Boutons CTA</span>
+            </div>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;">ℹ️</span><span style="font-size:10px;color:#c9d1d9;font-family:monospace;">Note / Encart</span>
+            </div>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:6px 8px;cursor:grab;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;">📫</span><span style="font-size:10px;color:#c9d1d9;font-family:monospace;">Footer</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:10px;border-top:1px solid #30363d;">
+          <p style="margin:0 0 4px;font-size:9px;color:#8b949e;font-family:monospace;">MES TEMPLATES</p>
+          <div style="background:#21262d;border:1px dashed #30363d;border-radius:5px;padding:8px;text-align:center;">
+            <span style="font-size:9px;color:#8b949e;font-family:monospace;">+ Sauvegarder comme template</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: Canvas (email preview) -->
+      <div style="flex:1;background:#21262d;padding:16px;overflow-y:auto;display:flex;flex-direction:column;align-items:center;">
+        <p style="margin:0 0 10px;font-size:9px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;font-family:monospace;align-self:flex-start;">APERÇU EMAIL (620px)</p>
+
+        <div style="width:100%;max-width:400px;background:#f2efe9;border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+
+          <!-- Block 1: Header — selected -->
+          <div style="background:#0078B8;padding:10px 16px;position:relative;outline:2px solid #3b82f6;outline-offset:-2px;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+              <div style="width:60px;height:22px;background:rgba(255,255,255,0.9);border-radius:3px;"></div>
+              <div style="width:1px;height:20px;background:rgba(255,255,255,0.3);"></div>
+              <div style="width:70px;height:22px;background:rgba(255,255,255,0.9);border-radius:3px;"></div>
+            </div>
+            <!-- Controls overlay -->
+            <div style="position:absolute;top:-10px;right:4px;display:flex;gap:3px;">
+              <div style="background:#3b82f6;border-radius:3px;padding:2px 5px;font-size:8px;color:#fff;font-family:monospace;">⬆</div>
+              <div style="background:#3b82f6;border-radius:3px;padding:2px 5px;font-size:8px;color:#fff;font-family:monospace;">⬇</div>
+              <div style="background:#ef4444;border-radius:3px;padding:2px 5px;font-size:8px;color:#fff;font-family:monospace;">✕</div>
+            </div>
+          </div>
+
+          <!-- Block 2: Hero image placeholder -->
+          <div style="background:#ddd;height:60px;display:flex;align-items:center;justify-content:center;position:relative;">
+            <span style="font-size:9px;color:#888;">🖼 Hero Image (URL ou upload)</span>
+          </div>
+
+          <!-- Block 3: Intro text -->
+          <div style="background:#fff;padding:10px 14px;text-align:center;">
+            <p style="margin:0;font-size:9px;color:#555;line-height:1.6;">Une offre <strong>double avantage cumulable</strong> : profitez des deux remises simultanément.</p>
+          </div>
+
+          <!-- Block 4: 2 cartes -->
+          <div style="background:#fff;padding:8px 14px;display:flex;gap:6px;">
+            <div style="flex:1;background:#1c1c1c;border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-size:14px;color:#fff;font-weight:700;">-20€</div>
+              <div style="font-size:7px;color:#aaa;">Entretien poêle</div>
+              <div style="margin-top:5px;background:#fff;color:#1c1c1c;font-size:7px;font-weight:600;padding:3px;border-radius:10px;">Réserver →</div>
+            </div>
+            <div style="flex:1;background:#2d1800;border-radius:8px;padding:8px;text-align:center;">
+              <div style="font-size:14px;color:#F5A623;font-weight:700;">-50€</div>
+              <div style="font-size:7px;color:#d4a060;">Palette pellets</div>
+              <div style="margin-top:5px;background:#F5A623;color:#1c1c1c;font-size:7px;font-weight:600;padding:3px;border-radius:10px;">Commander →</div>
+            </div>
+          </div>
+
+          <!-- Block 5: Footer -->
+          <div style="background:#0078B8;padding:8px 14px;text-align:center;">
+            <p style="margin:0;font-size:7px;color:rgba(0,0,0,0.7);">Pinel — Lavaur | Pellet Distribution — contact@...</p>
+          </div>
+        </div>
+
+        <!-- Add block button -->
+        <div style="margin-top:10px;background:#21262d;border:1px dashed #30363d;border-radius:6px;padding:8px 20px;cursor:pointer;">
+          <span style="font-size:10px;color:#8b949e;font-family:monospace;">+ Ajouter un bloc</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: Config panel -->
+      <div style="width:220px;background:#161b22;border-left:1px solid #30363d;padding:12px;overflow-y:auto;flex-shrink:0;">
+        <p style="margin:0 0 10px;font-size:9px;color:#8b949e;text-transform:uppercase;letter-spacing:1.5px;font-family:monospace;">CONFIGURATION — Header</p>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <p style="margin:0 0 3px;font-size:9px;color:#8b949e;font-family:monospace;">Couleur de fond</p>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;display:flex;align-items:center;gap:6px;">
+              <div style="width:14px;height:14px;background:#0078B8;border-radius:3px;border:1px solid #30363d;"></div>
+              <span style="font-size:10px;color:#c9d1d9;font-family:monospace;">#0078B8</span>
+            </div>
+          </div>
+
+          <div>
+            <p style="margin:0 0 3px;font-size:9px;color:#8b949e;font-family:monospace;">Logo gauche (URL)</p>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;">
+              <span style="font-size:10px;color:#c9d1d9;font-family:monospace;">https://i.imgur.com/cDI...</span>
+            </div>
+          </div>
+
+          <div>
+            <p style="margin:0 0 3px;font-size:9px;color:#8b949e;font-family:monospace;">Logo droit (URL)</p>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;">
+              <span style="font-size:10px;color:#c9d1d9;font-family:monospace;">https://i.imgur.com/U1P...</span>
+            </div>
+          </div>
+
+          <div>
+            <p style="margin:0 0 3px;font-size:9px;color:#8b949e;font-family:monospace;">Lien logo gauche</p>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;">
+              <span style="font-size:10px;color:#c9d1d9;font-family:monospace;">https://quincaillerie-pi...</span>
+            </div>
+          </div>
+
+          <div>
+            <p style="margin:0 0 3px;font-size:9px;color:#8b949e;font-family:monospace;">Border radius</p>
+            <div style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;display:flex;justify-content:space-between;">
+              <span style="font-size:10px;color:#c9d1d9;font-family:monospace;">12px</span>
+              <span style="font-size:10px;color:#8b949e;font-family:monospace;">↔</span>
+            </div>
+          </div>
+
+          <div style="padding-top:8px;border-top:1px solid #30363d;">
+            <p style="margin:0 0 4px;font-size:9px;color:#8b949e;font-family:monospace;">Séparateur entre logos</p>
+            <div style="display:flex;gap:4px;">
+              <div style="flex:1;background:#238636;border-radius:4px;padding:4px;text-align:center;">
+                <span style="font-size:9px;color:#fff;font-family:monospace;">Oui</span>
+              </div>
+              <div style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:4px;padding:4px;text-align:center;">
+                <span style="font-size:9px;color:#8b949e;font-family:monospace;">Non</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;text-align:center;">Le bloc sélectionné (outline bleu) affiche sa config à droite. Boutons ⬆⬇✕ pour réordonner/supprimer. "Ajouter un bloc" en bas du canvas.</p>
