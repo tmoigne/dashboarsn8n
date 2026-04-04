@@ -1,0 +1,4 @@
+{"type":"server-started","port":62132,"host":"0.0.0.0","url_host":"192.168.1.52","url":"http://192.168.1.52:62132","screen_dir":"/root/dashboarsn8n/.superpowers/brainstorm/148801-1775140524/content","state_dir":"/root/dashboarsn8n/.superpowers/brainstorm/148801-1775140524/state"}
+{"type":"screen-added","file":"/root/dashboarsn8n/.superpowers/brainstorm/148801-1775140524/content/login-style.html"}
+{"type":"screen-added","file":"/root/dashboarsn8n/.superpowers/brainstorm/148801-1775140524/content/waiting-3.html"}
+{"type":"server-stopped","reason":"idle timeout"}

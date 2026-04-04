@@ -1,0 +1,82 @@
+<h2>Style de la page de connexion</h2>
+<p class="subtitle">Quel design correspond le mieux à l'ambiance du dashboard ?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117;padding:24px;min-height:180px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:280px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:28px;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="width:36px;height:36px;background:#238636;border-radius:8px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:white;font-size:14px;">N</div>
+          <div style="color:#c9d1d9;font-size:14px;font-weight:600;">N8N Dashboard</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="color:#8b949e;font-size:10px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Email</div>
+          <div style="background:#0d1117;border:1px solid #30363d;border-radius:5px;height:28px;"></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="color:#8b949e;font-size:10px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Mot de passe</div>
+          <div style="background:#0d1117;border:1px solid #30363d;border-radius:5px;height:28px;"></div>
+        </div>
+        <div style="background:#238636;border-radius:5px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:600;">Se connecter</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Centré minimaliste</h3>
+      <p>Card de login centrée sur fond sombre, style GitHub. Simple et pro.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117;padding:0;min-height:180px;display:flex;">
+      <div style="flex:1;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column;justify-content:center;padding:24px;">
+        <div style="width:36px;height:36px;background:#238636;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:white;font-size:14px;">N</div>
+        <div style="color:#c9d1d9;font-size:13px;font-weight:600;margin-bottom:6px;">N8N Dashboard</div>
+        <div style="color:#8b949e;font-size:11px;">Automatisation n8n</div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;"><div style="width:6px;height:6px;border-radius:50%;background:#3fb950;"></div><div style="color:#8b949e;font-size:10px;">Email builder intégré</div></div>
+          <div style="display:flex;align-items:center;gap:8px;"><div style="width:6px;height:6px;border-radius:50%;background:#3fb950;"></div><div style="color:#8b949e;font-size:10px;">Historique des tâches</div></div>
+          <div style="display:flex;align-items:center;gap:8px;"><div style="width:6px;height:6px;border-radius:50%;background:#3fb950;"></div><div style="color:#8b949e;font-size:10px;">Multi-comptes</div></div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="width:100%;">
+          <div style="color:#c9d1d9;font-size:13px;font-weight:600;margin-bottom:16px;">Connexion</div>
+          <div style="margin-bottom:10px;">
+            <div style="background:#0d1117;border:1px solid #30363d;border-radius:5px;height:26px;"></div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="background:#0d1117;border:1px solid #30363d;border-radius:5px;height:26px;"></div>
+          </div>
+          <div style="background:#238636;border-radius:5px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:600;">Se connecter</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Split screen</h3>
+      <p>Moitié gauche branding/features, moitié droite formulaire. Plus de personnalité.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117;padding:24px;min-height:180px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:280px;">
+        <div style="color:#3fb950;font-size:10px;font-family:monospace;margin-bottom:16px;letter-spacing:2px;">// OCCITINFO DASHBOARD</div>
+        <div style="color:#c9d1d9;font-size:18px;font-weight:700;margin-bottom:4px;">Bon retour</div>
+        <div style="color:#8b949e;font-size:11px;margin-bottom:20px;">Connectez-vous pour continuer</div>
+        <div style="margin-bottom:10px;">
+          <div style="color:#3fb950;font-size:9px;font-family:monospace;margin-bottom:4px;">EMAIL_ADDRESS</div>
+          <div style="background:#161b22;border:1px solid #238636;border-radius:5px;height:28px;"></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="color:#3fb950;font-size:9px;font-family:monospace;margin-bottom:4px;">PASSWORD</div>
+          <div style="background:#161b22;border:1px solid #238636;border-radius:5px;height:28px;"></div>
+        </div>
+        <div style="background:transparent;border:1px solid #238636;border-radius:5px;height:30px;display:flex;align-items:center;justify-content:center;color:#3fb950;font-size:11px;font-family:monospace;">→ AUTHENTICATE</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Terminal / Dev</h3>
+      <p>Style CLI/hacker avec labels monospace et accents verts. Cohérent avec l'univers n8n/dev.</p>
+    </div>
+  </div>
+</div>
