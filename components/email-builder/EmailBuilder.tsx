@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { EmailBlock, EmailBlockType, EmailBlockProps, EmailTemplate } from "@/types";
 import { generateEmailHtml } from "@/lib/email-html";
-import { saveDraft, loadDraft, loadTemplates, saveTemplate, deleteTemplate } from "@/lib/email-templates";
+import { saveDraft, loadDraft } from "@/lib/email-templates";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import BlockCatalogue from "./BlockCatalogue";
 import Canvas from "./Canvas";
 import ConfigPanel from "./ConfigPanel";
@@ -37,20 +38,20 @@ function defaultProps(type: EmailBlockType): EmailBlockProps {
 export default function EmailBuilder() {
   const [blocks, setBlocks] = useState<EmailBlock[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const [emailName, setEmailName] = useState("Sans titre");
+  const [saving, setSaving] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { templates, save: saveTemplate, remove: deleteTemplate } = useEmailTemplates();
 
-  // Load draft + templates on mount
+  // Load draft on mount
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.length > 0) setBlocks(draft);
-    setTemplates(loadTemplates());
   }, []);
 
-  // Debounced auto-save
+  // Debounced auto-save to localStorage (draft is transient — per device)
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => saveDraft(blocks), 500);
@@ -95,11 +96,12 @@ export default function EmailBuilder() {
     });
   }, []);
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     const name = prompt("Nom du template :", emailName);
     if (!name) return;
-    saveTemplate(name, blocks);
-    setTemplates(loadTemplates());
+    setSaving(true);
+    await saveTemplate(name, blocks);
+    setSaving(false);
   };
 
   const handleLoadTemplate = (t: EmailTemplate) => {
@@ -107,11 +109,6 @@ export default function EmailBuilder() {
     setBlocks(t.blocks);
     setSelectedId(null);
     setEmailName(t.name);
-  };
-
-  const handleDeleteTemplate = (id: string) => {
-    deleteTemplate(id);
-    setTemplates(loadTemplates());
   };
 
   const handleCopyHtml = async () => {
@@ -152,9 +149,10 @@ export default function EmailBuilder() {
         </button>
         <button
           onClick={handleSaveTemplate}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-dark hover:bg-green text-white rounded transition-colors"
+          disabled={saving}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-dark hover:bg-green disabled:opacity-50 text-white rounded transition-colors"
         >
-          <Save size={14} /> Sauvegarder
+          <Save size={14} /> {saving ? "Sauvegarde…" : "Sauvegarder"}
         </button>
       </header>
 
@@ -164,7 +162,7 @@ export default function EmailBuilder() {
           templates={templates}
           onAddBlock={addBlock}
           onLoadTemplate={handleLoadTemplate}
-          onDeleteTemplate={handleDeleteTemplate}
+          onDeleteTemplate={deleteTemplate}
         />
         <Canvas
           blocks={blocks}

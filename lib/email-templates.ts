@@ -1,11 +1,14 @@
-import type { EmailBlock, EmailTemplate } from "@/types";
+import type { EmailBlock } from "@/types";
+
+// Draft is intentionally localStorage — it's transient per-device working state.
+// Saved templates are persisted in DB via /api/templates.
 
 const DRAFT_KEY = "email_builder_draft";
-const TEMPLATES_KEY = "email_builder_templates";
-const MAX_TEMPLATES = 20;
 
 export function saveDraft(blocks: EmailBlock[]): void {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(blocks));
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(blocks));
+  } catch {}
 }
 
 export function loadDraft(): EmailBlock[] | null {
@@ -15,31 +18,4 @@ export function loadDraft(): EmailBlock[] | null {
   } catch {
     return null;
   }
-}
-
-export function loadTemplates(): EmailTemplate[] {
-  try {
-    const raw = localStorage.getItem(TEMPLATES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveTemplate(name: string, blocks: EmailBlock[]): EmailTemplate {
-  const templates = loadTemplates();
-  const template: EmailTemplate = {
-    id: crypto.randomUUID(),
-    name,
-    blocks,
-    updatedAt: Date.now(),
-  };
-  const updated = [template, ...templates].slice(0, MAX_TEMPLATES);
-  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(updated));
-  return template;
-}
-
-export function deleteTemplate(id: string): void {
-  const templates = loadTemplates().filter((t) => t.id !== id);
-  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
 }

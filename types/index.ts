@@ -132,5 +132,5 @@ export interface EmailTemplate {
   id: string;
   name: string;
   blocks: EmailBlock[];
-  updatedAt: number;
+  updatedAt: string | number;
 }
