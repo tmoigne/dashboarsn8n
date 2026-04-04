@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Trash2, Edit2, X, Check, Shield, User, ArrowLeft } from "lucide-react";
+import { UserPlus, Trash2, Edit2, X, Check, Shield, User, ArrowLeft, Crown } from "lucide-react";
 import Link from "next/link";
 import { TASKS } from "@/lib/tasks";
 
@@ -27,15 +27,22 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("admin");
 
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async () => {
     const res = await fetch("/api/users");
     if (res.status === 401) { router.push("/"); return; }
     setUsers(await res.json());
     setLoading(false);
-  }
+  }, [router]);
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    fetchUsers();
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => { if (s?.user?.role) setCurrentUserRole(s.user.role); })
+      .catch(() => {});
+  }, [fetchUsers]);
 
   function openCreate() {
     setForm({ ...EMPTY_FORM });
@@ -86,7 +93,7 @@ export default function UsersPage() {
   return (
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-50 bg-surface border-b border-border h-12 flex items-center gap-3 px-6">
-        <Link href="/" className="text-dim hover:text-text transition-colors">
+        <Link href={currentUserRole === "superadmin" ? "/admin" : "/"} className="text-dim hover:text-text transition-colors">
           <ArrowLeft size={16} />
         </Link>
         <span className="font-mono text-sm text-text font-semibold">Gestion des comptes</span>
@@ -117,12 +124,18 @@ export default function UsersPage() {
             {users.map(user => (
               <div key={user.id} className="bg-surface border border-border rounded-xl p-4 flex items-start gap-4">
                 <div className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center flex-shrink-0">
-                  {user.role === "admin" ? <Shield size={15} style={{ color: "#58a6ff" }} /> : <User size={15} className="text-dim" />}
+                  {user.role === "superadmin" ? <Crown size={15} style={{ color: "#c084fc" }} /> :
+                   user.role === "admin" ? <Shield size={15} style={{ color: "#58a6ff" }} /> :
+                   <User size={15} className="text-dim" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-text text-sm">{user.name}</span>
-                    <span className={`font-mono text-xs px-2 py-0.5 rounded-full border ${user.role === "admin" ? "text-blue-400 border-blue-800 bg-blue-950/30" : "text-dim border-border bg-muted"}`}>
+                    <span className={`font-mono text-xs px-2 py-0.5 rounded-full border ${
+                      user.role === "superadmin" ? "text-purple-400 border-purple-800 bg-purple-950/30" :
+                      user.role === "admin" ? "text-blue-400 border-blue-800 bg-blue-950/30" :
+                      "text-dim border-border bg-muted"
+                    }`}>
                       {user.role}
                     </span>
                   </div>
@@ -194,6 +207,7 @@ export default function UsersPage() {
                 >
                   <option value="user">Utilisateur</option>
                   <option value="admin">Admin</option>
+                  {currentUserRole === "superadmin" && <option value="superadmin">Superadmin</option>}
                 </select>
               </div>
 

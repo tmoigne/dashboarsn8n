@@ -5,10 +5,15 @@ import bcrypt from "bcryptjs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-// PATCH — update user
+function isAdminOrSuperadmin(session: Awaited<ReturnType<typeof auth>>) {
+  const role = (session?.user as { role?: string })?.role ?? "";
+  return session && ["admin", "superadmin"].includes(role);
+}
+
+// PATCH — update user (admin/superadmin only)
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const session = await auth();
-  if (!session || (session.user as { role?: string }).role !== "admin") {
+  if (!isAdminOrSuperadmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -39,15 +44,15 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   return NextResponse.json(user);
 }
 
-// DELETE — delete user
+// DELETE — delete user (admin/superadmin only)
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
   const session = await auth();
-  if (!session || (session.user as { role?: string }).role !== "admin") {
+  if (!isAdminOrSuperadmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await ctx.params;
-  const currentUserId = session.user?.id;
+  const currentUserId = (session?.user as { id?: string })?.id;
   if (id === currentUserId) {
     return NextResponse.json({ error: "Impossible de se supprimer soi-même" }, { status: 400 });
   }

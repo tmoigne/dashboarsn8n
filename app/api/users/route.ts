@@ -3,10 +3,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// GET — list all users (admin only)
+function isAdminOrSuperadmin(session: Awaited<ReturnType<typeof auth>>) {
+  const role = (session?.user as { role?: string })?.role ?? "";
+  return session && ["admin", "superadmin"].includes(role);
+}
+
+// GET — list all users (admin/superadmin only)
 export async function GET() {
   const session = await auth();
-  if (!session || (session.user as { role?: string }).role !== "admin") {
+  if (!isAdminOrSuperadmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,10 +26,10 @@ export async function GET() {
   return NextResponse.json(users);
 }
 
-// POST — create user
+// POST — create user (admin/superadmin only)
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session || (session.user as { role?: string }).role !== "admin") {
+  if (!isAdminOrSuperadmin(session)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

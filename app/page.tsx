@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfigGuard from "@/components/ConfigGuard";
 import TaskRunner from "@/components/TaskRunner";
@@ -8,7 +8,6 @@ import HistoryPanel from "@/components/history/HistoryPanel";
 import ClaudeUsage from "@/components/ClaudeUsage";
 import UsageStats from "@/components/UsageStats";
 import StatsBar from "@/components/StatsBar";
-import Link from "next/link";
 import { TASKS } from "@/lib/tasks";
 import { useHistory } from "@/hooks/useHistory";
 import { useInstances } from "@/hooks/useInstances";
@@ -52,16 +51,8 @@ export default function HomePage() {
   const [initialText, setInitialText] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [showInstanceMenu, setShowInstanceMenu] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const { history, add: addHistory, clear: clearHistory } = useHistory();
   const { instances, activeInstance, switchTo } = useInstances();
-
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then(r => r.json())
-      .then(s => { if (s?.user?.role) setUserRole(s.user.role); })
-      .catch(() => {});
-  }, []);
 
   const handleReload = (entry: HistoryEntry) => {
     const task = TASKS.find((t) => t.id === entry.taskId);
@@ -123,14 +114,6 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
-            )}
-            {(userRole === "admin" || userRole === "superadmin") && (
-              <Link
-                href={userRole === "superadmin" ? "/admin" : "/admin/users"}
-                className="font-mono text-xs text-dim hover:text-text transition-colors"
-              >
-                Admin
-              </Link>
             )}
             <button
               onClick={() => setShowHistory((v) => !v)}
