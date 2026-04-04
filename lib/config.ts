@@ -1,28 +1,20 @@
-import { getActiveInstance } from "@/lib/instances";
-import type { WebhookConfig } from "@/types";
+import type { WebhookConfig, N8nInstance } from "@/types";
 
 export type { WebhookConfig };
 
-const LEGACY_CONFIG_KEY = "n8n_webhook_config";
-
-export function getConfig(): WebhookConfig | null {
-  // Active instance takes priority
-  const instance = getActiveInstance();
-  if (instance) return { baseUrl: instance.baseUrl, apiKey: instance.apiKey };
-
-  // Fallback: legacy single-config (migration path)
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(LEGACY_CONFIG_KEY);
-  if (!raw) return null;
+export async function getConfigAsync(): Promise<WebhookConfig | null> {
   try {
-    return JSON.parse(raw) as WebhookConfig;
-  } catch {
-    return null;
-  }
+    const res = await fetch("/api/instances");
+    if (!res.ok) return null;
+    const instances: N8nInstance[] = await res.json();
+    const active = instances.find((i) => i.active) ?? instances[0] ?? null;
+    if (active) return { baseUrl: active.baseUrl, apiKey: active.apiKey };
+  } catch {}
+  return null;
 }
 
-export function isConfigured(): boolean {
-  const cfg = getConfig();
+export async function isConfiguredAsync(): Promise<boolean> {
+  const cfg = await getConfigAsync();
   return !!(cfg?.baseUrl && cfg?.apiKey);
 }
 

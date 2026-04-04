@@ -30,6 +30,7 @@ export interface N8nInstance {
   name: string;
   baseUrl: string;
   apiKey: string;
+  active?: boolean;
 }
 
 // ── Email Builder ─────────────────────────────────────────────────────────────

@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useInstances } from "@/hooks/useInstances";
 import type { N8nInstance } from "@/types";
-
-const CLAUDE_KEY = "claude_api_key";
 
 interface FormState {
   name: string;
@@ -33,9 +31,15 @@ export default function SettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<"ok" | "error" | null>(null);
-  const [claudeKey, setClaudeKey] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(CLAUDE_KEY) ?? "" : ""
-  );
+  const [claudeKey, setClaudeKey] = useState("");
+  const [claudeKeySaving, setClaudeKeySaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/config")
+      .then(r => r.json())
+      .then(cfg => { if (cfg.claude_api_key) setClaudeKey(cfg.claude_api_key); })
+      .catch(() => {});
+  }, []);
 
   const isValid = form.name.trim() && form.baseUrl.trim() && form.apiKey.trim();
 
@@ -51,18 +55,17 @@ export default function SettingsPage() {
     setTestResult(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isValid) return;
     if (editingId) {
-      update({ id: editingId, ...form });
+      await update({ id: editingId, ...form });
     } else {
-      const newInst = add(form);
-      switchTo(newInst.id);
+      const newInst = await add(form);
+      await switchTo(newInst.id);
     }
+    const wasNew = !editingId && instances.length === 0;
     handleCancel();
-    if (instances.length === 0 && !editingId) {
-      router.push("/");
-    }
+    if (wasNew) router.push("/");
   };
 
   const handleTest = async () => {
@@ -278,16 +281,30 @@ export default function SettingsPage() {
             Clé API Claude (Anthropic)
           </p>
           <p className="text-dim text-xs">Utilisée pour afficher les limites d'utilisation en temps réel.</p>
-          <input
-            type="password"
-            value={claudeKey}
-            onChange={(e) => {
-              setClaudeKey(e.target.value);
-              localStorage.setItem(CLAUDE_KEY, e.target.value);
-            }}
-            placeholder="sk-ant-••••••••••••••••"
-            className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
-          />
+          <div className="flex gap-3">
+            <input
+              type="password"
+              value={claudeKey}
+              onChange={(e) => setClaudeKey(e.target.value)}
+              placeholder="sk-ant-••••••••••••••••"
+              className="flex-1 bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
+            />
+            <button
+              onClick={async () => {
+                setClaudeKeySaving(true);
+                await fetch("/api/config", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ claude_api_key: claudeKey }),
+                });
+                setClaudeKeySaving(false);
+              }}
+              disabled={claudeKeySaving}
+              className="px-4 py-3 bg-green-dark hover:bg-green disabled:opacity-40 text-white rounded-xl font-mono text-xs uppercase tracking-widest transition-colors"
+            >
+              {claudeKeySaving ? "..." : "Sauvegarder"}
+            </button>
+          </div>
         </div>
 
         {/* Webhooks info */}

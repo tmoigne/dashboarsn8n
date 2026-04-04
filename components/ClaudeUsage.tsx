@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const CLAUDE_KEY = "claude_api_key";
-
 interface UsageData {
   ok: boolean;
   usage?: { input_tokens: number | null; output_tokens: number | null };
@@ -38,8 +36,10 @@ export default function ClaudeUsage() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   useEffect(() => {
-    const k = localStorage.getItem(CLAUDE_KEY) ?? "";
-    setApiKey(k);
+    fetch("/api/config")
+      .then(r => r.json())
+      .then(cfg => { if (cfg.claude_api_key) setApiKey(cfg.claude_api_key); })
+      .catch(() => {});
   }, []);
 
   const fetchUsage = useCallback(async (key: string) => {

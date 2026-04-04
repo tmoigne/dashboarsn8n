@@ -12,11 +12,11 @@ async function main() {
 
   const email = process.env.ADMIN_EMAIL ?? "admin@example.com";
   const password = process.env.ADMIN_PASSWORD ?? "Admin1234!";
-  const name = process.env.ADMIN_NAME ?? "Admin";
+  const name = process.env.ADMIN_NAME ?? "Super Admin";
 
   const hashed = await bcrypt.hash(password, 12);
-  await prisma.user.create({ data: { email, password: hashed, name, role: "admin" } });
-  console.log(`Admin créé : ${email}`);
+  await prisma.user.create({ data: { email, password: hashed, name, role: "superadmin" } });
+  console.log(`Superadmin créé : ${email} / ${password}`);
 }
 
 main()

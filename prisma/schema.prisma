@@ -37,3 +37,21 @@ model EmailTemplate {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
+
+// Global app config — key/value (n8n instances, Claude key, etc.)
+model AppConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// n8n instances stored in DB
+model N8nInstance {
+  id        String   @id @default(cuid())
+  name      String
+  baseUrl   String
+  apiKey    String
+  active    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
