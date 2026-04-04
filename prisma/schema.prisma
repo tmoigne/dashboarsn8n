@@ -4,16 +4,28 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String          @id @default(cuid())
-  email     String          @unique
-  password  String
-  name      String
-  role      String          @default("user")
-  createdAt DateTime        @default(now())
-  templates EmailTemplate[]
+  id         String           @id @default(cuid())
+  email      String           @unique
+  password   String
+  name       String
+  role       String           @default("user")
+  createdAt  DateTime         @default(now())
+  templates  EmailTemplate[]
+  taskAccess UserTaskAccess[]
+}
+
+model UserTaskAccess {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, taskId])
 }
 
 model EmailTemplate {

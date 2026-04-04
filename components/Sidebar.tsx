@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV = [
+const NAV: { href: string; icon: string; label: string }[] = [
   { href: "/", icon: "⬡", label: "Dashboard" },
-  { href: "/email-builder", icon: "✉", label: "Email Builder", isNew: true },
+  { href: "/email-builder", icon: "✉", label: "Email Builder" },
+  { href: "/admin/users", icon: "👥", label: "Comptes" },
   { href: "/settings", icon: "⚙", label: "Paramètres" },
 ];
 
@@ -38,11 +39,6 @@ export default function Sidebar() {
               </span>
               <span className="font-mono text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-2">
                 {item.label}
-                {item.isNew && (
-                  <span className="bg-green-dark text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                    NEW
-                  </span>
-                )}
               </span>
             </Link>
           );

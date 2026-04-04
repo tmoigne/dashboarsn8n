@@ -57,53 +57,65 @@ function SortableBlock({ block, index, total, selected, onSelect, onMoveUp, onMo
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-    outline: selected ? "2px solid #58a6ff" : "2px solid transparent",
-    outlineOffset: 0,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="relative cursor-pointer group"
+      className="relative group mb-1"
       onClick={() => onSelect(block.id)}
     >
-      {/* Drag handle */}
+      {/* Drag handle bar — always visible, spans full width */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-1 left-1 z-10 bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        className="flex items-center justify-center h-5 w-full cursor-grab active:cursor-grabbing select-none rounded-t"
+        style={{
+          background: selected ? "rgba(88,166,255,0.15)" : "rgba(255,255,255,0.04)",
+          borderTop: selected ? "2px solid #58a6ff" : "2px solid rgba(255,255,255,0.1)",
+          borderLeft: selected ? "2px solid #58a6ff" : "2px solid rgba(255,255,255,0.1)",
+          borderRight: selected ? "2px solid #58a6ff" : "2px solid rgba(255,255,255,0.1)",
+        }}
         onClick={(e) => e.stopPropagation()}
         title="Glisser pour réordonner"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-          <circle cx="4" cy="3" r="1.2"/><circle cx="10" cy="3" r="1.2"/>
-          <circle cx="4" cy="7" r="1.2"/><circle cx="10" cy="7" r="1.2"/>
-          <circle cx="4" cy="11" r="1.2"/><circle cx="10" cy="11" r="1.2"/>
+        <svg width="20" height="10" viewBox="0 0 20 10" fill="currentColor" style={{ color: selected ? "#58a6ff" : "rgba(255,255,255,0.3)" }}>
+          <circle cx="4" cy="2.5" r="1.2"/><circle cx="10" cy="2.5" r="1.2"/><circle cx="16" cy="2.5" r="1.2"/>
+          <circle cx="4" cy="7.5" r="1.2"/><circle cx="10" cy="7.5" r="1.2"/><circle cx="16" cy="7.5" r="1.2"/>
         </svg>
+      </div>
+
+      {/* Block content */}
+      <div
+        style={{
+          borderLeft: selected ? "2px solid #58a6ff" : "2px solid rgba(255,255,255,0.1)",
+          borderRight: selected ? "2px solid #58a6ff" : "2px solid rgba(255,255,255,0.1)",
+          borderBottom: selected ? "2px solid #58a6ff" : "2px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        <BlockPreview block={block} />
       </div>
 
       {/* Controls */}
       <div
-        className={`absolute top-1 right-1 flex gap-1 z-10 transition-opacity ${selected ? "opacity-100" : "opacity-0 hover:opacity-100"}`}
+        className={`absolute bottom-2 right-2 flex gap-1 z-10 transition-opacity ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {index > 0 && (
-          <button onClick={() => onMoveUp(block.id)} className="bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded">
+          <button onClick={() => onMoveUp(block.id)} className="bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded" title="Monter">
             <ChevronUp size={14} />
           </button>
         )}
         {index < total - 1 && (
-          <button onClick={() => onMoveDown(block.id)} className="bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded">
+          <button onClick={() => onMoveDown(block.id)} className="bg-[#161b22] border border-border text-dim hover:text-text p-0.5 rounded" title="Descendre">
             <ChevronDown size={14} />
           </button>
         )}
-        <button onClick={() => onRemove(block.id)} className="bg-[#161b22] border border-border text-dim hover:text-red-400 p-0.5 rounded">
+        <button onClick={() => onRemove(block.id)} className="bg-[#161b22] border border-border text-dim hover:text-red-400 p-0.5 rounded" title="Supprimer">
           <X size={14} />
         </button>
       </div>
-
-      <BlockPreview block={block} />
     </div>
   );
 }
