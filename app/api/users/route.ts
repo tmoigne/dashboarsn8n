@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-function isAdminOrSuperadmin(session: Awaited<ReturnType<typeof auth>>) {
-  const role = (session?.user as { role?: string })?.role ?? "";
-  return session && ["admin", "superadmin"].includes(role);
+function isAdminOrSuperadmin(session: unknown) {
+  const s = session as { user?: { role?: string } } | null;
+  const role = s?.user?.role ?? "";
+  return s && ["admin", "superadmin"].includes(role);
 }
 
 // GET — list all users (admin/superadmin only)

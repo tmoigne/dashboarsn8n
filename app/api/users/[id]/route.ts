@@ -5,9 +5,10 @@ import bcrypt from "bcryptjs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-function isAdminOrSuperadmin(session: Awaited<ReturnType<typeof auth>>) {
-  const role = (session?.user as { role?: string })?.role ?? "";
-  return session && ["admin", "superadmin"].includes(role);
+function isAdminOrSuperadmin(session: unknown) {
+  const s = session as { user?: { role?: string } } | null;
+  const role = s?.user?.role ?? "";
+  return s && ["admin", "superadmin"].includes(role);
 }
 
 // PATCH — update user (admin/superadmin only)
