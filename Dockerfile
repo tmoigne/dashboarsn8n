@@ -1,7 +1,7 @@
 FROM node:20-alpine AS base
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -23,7 +23,7 @@ ENV DATABASE_URL="file:/app/data/db.sqlite"
 ENV AUTH_SECRET="change-me-in-dokploy-env-vars"
 ENV NEXTAUTH_SECRET="change-me-in-dokploy-env-vars"
 
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
