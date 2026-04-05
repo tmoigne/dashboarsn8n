@@ -196,14 +196,14 @@ export default function TaskRunner({
   const isBatch = isFile && files.length > 1;
 
   return (
-    <div className="slide-up fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-surface border border-border rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+    <div className="slide-up fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/70 backdrop-blur-sm">
+      <div className="w-full sm:max-w-2xl bg-surface border border-border sm:rounded-2xl rounded-t-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
           <div>
             <p className="font-mono text-xs text-dim uppercase tracking-widest mb-1">
-              Tâche active
+              Automatisation
             </p>
-            <h2 className="text-text font-semibold text-lg">{task.label}</h2>
+            <h2 className="text-text font-semibold text-base sm:text-lg">{task.label}</h2>
           </div>
           <button
             onClick={onClose}
@@ -213,7 +213,7 @@ export default function TaskRunner({
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {task.outputFormats && task.outputFormats.length > 1 && (
             <div className="space-y-2">
               <label className="font-mono text-xs text-dim uppercase tracking-widest">
@@ -422,7 +422,7 @@ export default function TaskRunner({
             </div>
           )}
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3 pt-1 pb-2">
             <button
               onClick={run}
               disabled={!canSubmit}

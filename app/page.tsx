@@ -121,7 +121,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <StatsBar history={history} instanceName={n8nConfigured ? "n8n" : null} />
 
         <div className="flex items-center justify-between mb-4">
@@ -141,7 +141,7 @@ export default function HomePage() {
             <button
               key={task.id}
               onClick={() => { setInitialText(""); setActiveTask(task); }}
-              className="group text-left bg-surface border border-border hover:border-green/40 rounded-lg p-4 transition-all duration-150 hover:bg-muted"
+              className="group text-left bg-surface border border-border hover:border-green/40 rounded-xl p-4 transition-all duration-150 hover:bg-muted active:scale-[0.98]"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
