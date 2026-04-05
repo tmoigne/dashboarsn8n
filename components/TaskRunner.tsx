@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { Task, HistoryEntry } from "@/types";
-import { getConfigAsync, toBase64 } from "@/lib/config";
+import { toBase64 } from "@/lib/config";
 
 interface Props {
   task: Task;
@@ -54,19 +54,16 @@ async function callProxy(
   webhookPath: string,
   body: Record<string, unknown>
 ): Promise<string> {
-  const cfg = await getConfigAsync();
   const res = await fetch("/api/proxy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      __webhookPath: webhookPath,
-      __apiKey: cfg?.apiKey ?? "",
-      __baseUrl: cfg?.baseUrl ?? "",
-      ...body,
-    }),
+    body: JSON.stringify({ __webhookPath: webhookPath, ...body }),
   });
 
-  if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+  }
   const data = await res.json();
   return formatResult(data);
 }
