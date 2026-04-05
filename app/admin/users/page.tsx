@@ -31,8 +31,13 @@ export default function UsersPage() {
 
   const fetchUsers = useCallback(async () => {
     const res = await fetch("/api/users");
-    if (res.status === 401) { router.push("/"); return; }
-    setUsers(await res.json());
+    if (res.status === 401) {
+      // Not authorized — redirect to login instead of home
+      router.push("/login");
+      return;
+    }
+    const data = await res.json();
+    setUsers(Array.isArray(data) ? data : []);
     setLoading(false);
   }, [router]);
 

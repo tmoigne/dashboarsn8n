@@ -41,6 +41,13 @@ export default function LoginPage() {
           <p className="text-dim text-sm mt-1">Connexion à votre espace</p>
         </div>
 
+        {/* Credentials par défaut — à supprimer après premier login */}
+        <div className="mb-6 p-3 bg-yellow-950/40 border border-yellow-800/50 rounded-xl">
+          <p className="font-mono text-xs text-yellow-400 mb-1">Compte superadmin par défaut :</p>
+          <p className="font-mono text-xs text-yellow-300">admin@example.com</p>
+          <p className="font-mono text-xs text-yellow-300">Admin1234!</p>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="font-mono text-xs text-dim uppercase tracking-widest block mb-2">
