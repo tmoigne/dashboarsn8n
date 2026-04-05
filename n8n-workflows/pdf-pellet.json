@@ -1,0 +1,411 @@
+{
+  "name": "pdf pellet",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{$json.sourceBinaryKey}}",
+        "options": {
+          "joinPages": true,
+          "keepSource": "json"
+        }
+      },
+      "id": "69530d33-12b4-4ba8-a5ef-e665afc6149b",
+      "name": "Extract data from PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [-608, 240],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "downloadAttachments": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [-1424, 240],
+      "id": "f5a91ebe-0cdd-4a75-ad2e-b81fdf3f46eb",
+      "name": "Email Trigger (IMAP)2",
+      "credentials": {
+        "imap": {
+          "id": "REMPLACE_PAR_TON_ID_IMAP",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Détecter PDF1 — sort 1 item par PDF\n * binary.pdf + json.sourceBinaryKey = 'pdf'\n */\nconst inputData = $input.all();\nconst out = [];\n\nfor (const item of inputData) {\n  const j = item.json || {};\n  const binAll = item.binary || {};\n  const emailFrom = j.emailFrom ?? j.from ?? '';\n  const emailSubject = j.emailSubject ?? j.subject ?? '';\n  const emailDate = j.emailDate ?? j.date ?? new Date().toISOString();\n\n  const keys = Object.keys(binAll || {}).filter(k => {\n    const b = binAll[k];\n    const mt = String(b?.mimeType || '').toLowerCase();\n    const fn = String(b?.fileName || '').toLowerCase();\n    return mt.includes('pdf') || /\\.pdf$/i.test(fn);\n  });\n\n  if (keys.length === 0) {\n    out.push({ json: { hasPdf: false, success: true, emailFrom, emailSubject, emailDate, message: 'Email sans PDF' } });\n    continue;\n  }\n\n  for (const k of keys) {\n    const b = binAll[k];\n    const fileName = b.fileName || 'document.pdf';\n    out.push({\n      json: {\n        hasPdf: true,\n        success: true,\n        sourceBinaryKey: 'pdf',\n        pdfFileName: fileName,\n        pdfMimeType: b.mimeType || 'application/pdf',\n        emailFrom, emailSubject, emailDate,\n      },\n      binary: {\n        pdf: { data: b.data, mimeType: b.mimeType || 'application/pdf', fileName }\n      },\n    });\n  }\n}\n\nreturn out.length ? out : [{ json: { hasPdf: false, success: false, message: 'Aucune sortie générée' } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1216, 240],
+      "id": "18aa8014-050c-4f2a-bd49-1785db6a9bd6",
+      "name": "Détecter PDF2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7dd32f48-7ec2-48a9-ac12-1f481a543caf",
+              "leftValue": "={{$json.hasPdf}}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            },
+            {
+              "id": "7b340857-1137-4b20-bf18-2700f336d6f9",
+              "leftValue": "={{$json.sourceBinaryKey}}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            },
+            {
+              "id": "c19514d1-7c32-4179-986b-f8ca8c7b32d0",
+              "leftValue": "={{ ($json.pdfMimeType || '').toLowerCase() }}",
+              "rightValue": "pdf",
+              "operator": { "type": "string", "operation": "contains" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-944, 240],
+      "id": "74696282-d9f8-4315-ba35-f1b78970debd",
+      "name": "If3",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Parser de factures/devis français SANS LLM\n * Retourne le MÊME FORMAT que Basic LLM Chain : { text: \"CSV complet\" }\n */\n\nfunction cleanText(text) {\n  return text.replace(/\\s+/g, ' ').trim();\n}\n\nfunction extractDate(text) {\n  const datePatterns = [\n    /(\\d{1,2})[\\/\\-\\.](\\d{1,2})[\\/\\-\\.](\\d{4})/,\n    /(\\d{4})[\\/\\-\\.](\\d{1,2})[\\/\\-\\.](\\d{1,2})/\n  ];\n  for (const regex of datePatterns) {\n    const match = text.match(regex);\n    if (match) {\n      if (match[3] && match[3].length === 4) {\n        return `${match[3]}-${match[2].padStart(2,'0')}-${match[1].padStart(2,'0')}`;\n      } else if (match[1].length === 4) {\n        return `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`;\n      }\n    }\n  }\n  return '';\n}\n\nfunction extractAmount(text) {\n  if (!text) return 0;\n  const cleaned = String(text).replace(/\\s/g, '').replace(',', '.');\n  const num = parseFloat(cleaned);\n  return isNaN(num) ? 0 : num;\n}\n\nfunction detectDocumentType(text) {\n  const lowerText = text.toLowerCase();\n  if (lowerText.includes('avoir') || lowerText.includes('credit note')) return 'credit_note';\n  if (lowerText.includes('facture') || lowerText.includes('invoice')) return 'invoice';\n  if (lowerText.includes('devis') || lowerText.includes('quote')) return 'quote';\n  if (lowerText.includes('reçu') || lowerText.includes('receipt')) return 'receipt';\n  return 'other';\n}\n\nfunction extractDocumentNumber(text) {\n  const patterns = [\n    /(?:Facture|Invoice|Devis|Quote)\\s*n°?\\s*:?\\s*([A-Z0-9\\-\\/]+)/i,\n    /N°\\s*(?:Facture|Invoice|Devis)?\\s*:?\\s*([A-Z0-9\\-\\/]+)/i,\n    /(?:Ref|Reference|Numéro)\\s*:?\\s*([A-Z0-9\\-\\/]+)/i,\n    /([A-Z]{3}\\d{5,})/\n  ];\n  for (const pattern of patterns) {\n    const match = text.match(pattern);\n    if (match && match[1]) return match[1].trim();\n  }\n  return '';\n}\n\nfunction extractCustomerCode(text) {\n  const patterns = [\n    /N°\\s*client\\s*:?\\s*(CLT\\d{8})/i,\n    /Client\\s*:?\\s*(CLT\\d{8})/i,\n    /Code\\s*client\\s*:?\\s*([A-Z0-9]+)/i,\n    /(CLT\\d{8})/i\n  ];\n  for (const pattern of patterns) {\n    const match = text.match(pattern);\n    if (match && match[1]) return match[1].trim();\n  }\n  return '';\n}\n\nfunction extractParties(text) {\n  const parties = { supplier: '', customer: '' };\n  const customerPatterns = [\n    /(?:Facturé à|Bill to|Client)\\s*:?\\s*([^\\n]+(?:\\n[^\\n]+){0,3})/i,\n    /((?:Madame|Monsieur|M\\.|Mme)\\s+[A-Z][^\\n]+(?:\\n[^\\n]+){0,2})/\n  ];\n  for (const pattern of customerPatterns) {\n    const match = text.match(pattern);\n    if (match && match[1]) {\n      const lines = match[1].split('\\n').slice(0, 3).map(l => l.trim()).filter(l => l);\n      parties.customer = lines.join(', ');\n      break;\n    }\n  }\n  const supplierPatterns = [\n    /((?:SARL|SAS|SA|EURL)\\s+[A-Z][^\\n]+(?:\\n[^\\n]+){0,4})/,\n    /(?:Fournisseur|Vendeur)\\s*:?\\s*([^\\n]+(?:\\n[^\\n]+){0,3})/i\n  ];\n  for (const pattern of supplierPatterns) {\n    const match = text.match(pattern);\n    if (match && match[1]) {\n      const lines = match[1].split('\\n').slice(0, 5).map(l => l.trim()).filter(l => l);\n      parties.supplier = lines.join(', ');\n      break;\n    }\n  }\n  return parties;\n}\n\nfunction extractProductLines(text) {\n  const lines = [];\n  const textLines = text.split('\\n');\n  const linePattern = /(.+?)\\s+(\\d+(?:[,\\.]\\d+)?)\\s+.*?(\\d+[,\\.]\\d{2})\\s+.*?(\\d+[,\\.]\\d{2})/;\n  let lineNumber = 1;\n  for (let i = 0; i < textLines.length; i++) {\n    const line = textLines[i].trim();\n    if (!line || line.toLowerCase().includes('total') || line.toLowerCase().includes('tva') || line.toLowerCase().includes('description') || line.toLowerCase().includes('quantité') || line.length < 15) continue;\n    const match = line.match(linePattern);\n    if (match) {\n      const quantity = extractAmount(match[2]);\n      const unitPrice = extractAmount(match[3]);\n      const lineAmount = extractAmount(match[4]);\n      if (quantity > 0 && unitPrice > 0) {\n        lines.push({ lineNumber: lineNumber++, description: match[1].trim(), quantity, unit: '', unitPrice, lineAmount, vatRate: 0.10 });\n      }\n    }\n  }\n  return lines;\n}\n\nfunction extractTotals(text) {\n  const totals = { totalHT: 0, totalVAT: 0, totalTTC: 0 };\n  const htPatterns = [/Total\\s+HT\\s*:?\\s*([\\d\\s,\\.]+)/i, /Sous[\\s-]?total\\s*:?\\s*([\\d\\s,\\.]+)/i, /Montant\\s+HT\\s*:?\\s*([\\d\\s,\\.]+)/i];\n  const vatPatterns = [/(?:TVA|VAT)\\s*(?:\\d+%)?\\s*:?\\s*([\\d\\s,\\.]+)/i, /Montant\\s+TVA\\s*:?\\s*([\\d\\s,\\.]+)/i];\n  const ttcPatterns = [/Total\\s+TTC\\s*:?\\s*([\\d\\s,\\.]+)/i, /Total\\s+à\\s+payer\\s*:?\\s*([\\d\\s,\\.]+)/i, /Montant\\s+total\\s*:?\\s*([\\d\\s,\\.]+)/i, /Net\\s+à\\s+payer\\s*:?\\s*([\\d\\s,\\.]+)/i];\n  for (const p of htPatterns) { const m = text.match(p); if (m) { totals.totalHT = extractAmount(m[1]); break; } }\n  for (const p of vatPatterns) { const m = text.match(p); if (m) { totals.totalVAT = extractAmount(m[1]); break; } }\n  for (const p of ttcPatterns) { const m = text.match(p); if (m) { totals.totalTTC = extractAmount(m[1]); break; } }\n  if (totals.totalTTC === 0 && totals.totalHT > 0) totals.totalTTC = totals.totalHT + totals.totalVAT;\n  if (totals.totalVAT === 0 && totals.totalHT > 0 && totals.totalTTC > 0) totals.totalVAT = totals.totalTTC - totals.totalHT;\n  return totals;\n}\n\nfunction escapeCSV(value) {\n  if (!value) return '';\n  const str = String(value);\n  if (str.includes(',') || str.includes('\"') || str.includes('\\n')) return '\"' + str.replace(/\"/g, '\"\"') + '\"';\n  return str;\n}\n\nconst items = $input.all();\nconst outputItems = [];\n\nfor (const item of items) {\n  const text = item.json.text || '';\n  if (!text) { outputItems.push({ json: { text: '', error: 'Pas de texte extrait du PDF', success: false } }); continue; }\n  try {\n    const sourceType = detectDocumentType(text);\n    const documentNumber = extractDocumentNumber(text);\n    const documentDate = extractDate(text);\n    const customerCode = extractCustomerCode(text);\n    const parties = extractParties(text);\n    const totals = extractTotals(text);\n    let productLines = extractProductLines(text);\n    if (productLines.length === 0) {\n      productLines = [{ lineNumber: 1, description: 'Document sans détail de lignes', quantity: 1, unit: '', unitPrice: totals.totalHT, lineAmount: totals.totalHT, vatRate: totals.totalVAT > 0 ? (totals.totalVAT / totals.totalHT) : 0.10 }];\n    }\n    const csvHeader = 'source_type,document_number,document_date,valid_until,customer_code,party_customer,party_supplier,line_number,description,quantity,unit,unit_price_ht,line_amount_ht,vat_rate,currency,account_iban,balance_after,total_ht,total_vat,total_ttc,category';\n    const csvLines = [csvHeader];\n    for (const line of productLines) {\n      csvLines.push([sourceType, documentNumber, documentDate, '', customerCode, escapeCSV(parties.customer), escapeCSV(parties.supplier), line.lineNumber, escapeCSV(line.description), line.quantity.toFixed(2), line.unit || '', line.unitPrice.toFixed(2), line.lineAmount.toFixed(2), line.vatRate.toFixed(2), 'EUR', '', '', totals.totalHT.toFixed(2), totals.totalVAT.toFixed(2), totals.totalTTC.toFixed(2), 'pellets'].join(','));\n    }\n    outputItems.push({ json: { text: csvLines.join('\\n') } });\n  } catch (error) {\n    outputItems.push({ json: { text: '', error: error.message, success: false } });\n  }\n}\n\nreturn outputItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-368, 240],
+      "id": "cb3ac0a8-0bb1-4254-8f9d-1a49886887e1",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Nœud Code n8n — création csv (VERSION FILTRÉE)\n */\n\nconst DEBUG = false;\nconst useSemicolon = true;\nconst addBom = true;\nconst crlf = true;\n\nconst DELIM = useSemicolon ? ';' : ',';\nconst NL = crlf ? '\\r\\n' : '\\n';\n\nconst RAW_TEXT_KEYS = ['text', 'output', 'response'];\n\nconst HEADERS = ['source_type','document_number','document_date','currency','customer_code','customer_name','customer_vat','supplier_name','supplier_vat','line_no','sku','description','qty','unit','unit_price_ht','discount','tax_rate','line_total_ht','total_ht','total_tva','total_ttc'];\n\nfunction stripCodeFences(s) {\n  if (typeof s !== 'string') return s;\n  let out = s.trim();\n  out = out.replace(/^```[a-zA-Z]*\\s*\\n/, '');\n  out = out.replace(/\\n```$/, '');\n  return out.trim();\n}\n\nfunction toNum(v) {\n  if (v === undefined || v === null || v === '') return null;\n  const s = String(v).replace(/\\s/g, '').replace(',', '.');\n  const n = Number(s);\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction csvEscape(v) {\n  const s = String(v ?? '');\n  if (s.includes('\"') || s.includes(DELIM) || s.includes('\\n') || s.includes('\\r')) {\n    return '\"' + s.replace(/\"/g, '\"\"') + '\"';\n  }\n  return s;\n}\n\nfunction parseCSVLine(line) {\n  const result = [];\n  let current = '';\n  let inQuotes = false;\n  for (let i = 0; i < line.length; i++) {\n    const char = line[i];\n    const nextChar = line[i + 1];\n    if (char === '\"') {\n      if (inQuotes && nextChar === '\"') { current += '\"'; i++; }\n      else inQuotes = !inQuotes;\n    } else if ((char === ',' || char === ';') && !inQuotes) {\n      result.push(current.trim());\n      current = '';\n    } else {\n      current += char;\n    }\n  }\n  result.push(current.trim());\n  return result;\n}\n\nfunction parseCsvToStructured(csvText) {\n  const lines = csvText.split(/\\r?\\n/).filter(l => l.trim());\n  if (lines.length < 2) return null;\n  const headers = parseCSVLine(lines[0]).map(h => h.replace(/^\"|\"$/g, '').trim());\n  const getValueFromLine = (values, header) => { const idx = headers.indexOf(header); return idx >= 0 ? values[idx] : ''; };\n  const firstLine = parseCSVLine(lines[1]);\n  const customer_code = getValueFromLine(firstLine, 'customer_code');\n  const customer_name_raw = getValueFromLine(firstLine, 'party_customer');\n  let customer_name = customer_name_raw;\n  if (customer_name_raw) { const match = customer_name_raw.match(/^([^,]+)/); if (match) customer_name = match[1].trim(); }\n  const customer_vat = getValueFromLine(firstLine, 'customer_vat');\n  const supplier_raw = getValueFromLine(firstLine, 'party_supplier');\n  let supplier_name = supplier_raw;\n  if (supplier_raw) { const match = supplier_raw.match(/^([^,]+)/); if (match) supplier_name = match[1].trim(); }\n  const supplier_vat = getValueFromLine(firstLine, 'supplier_vat');\n  const source_type = getValueFromLine(firstLine, 'source_type') || 'quote';\n  const document_number = getValueFromLine(firstLine, 'document_number');\n  const document_date = getValueFromLine(firstLine, 'document_date');\n  const currency = getValueFromLine(firstLine, 'currency') || 'EUR';\n  const total_ht = toNum(getValueFromLine(firstLine, 'total_ht')) ?? 0;\n  const total_tva = toNum(getValueFromLine(firstLine, 'total_vat') || getValueFromLine(firstLine, 'total_tva')) ?? 0;\n  const total_ttc = toNum(getValueFromLine(firstLine, 'total_ttc')) ?? 0;\n  let numeroClient = customer_code || customer_vat || '';\n  if (!numeroClient && customer_name) {\n    const cleaned = customer_name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8).padEnd(8, 'X');\n    numeroClient = 'CLT' + cleaned;\n  }\n  const products = [];\n  for (let i = 1; i < lines.length; i++) {\n    const values = parseCSVLine(lines[i]);\n    const getVal = (header) => getValueFromLine(values, header);\n    const qty = toNum(getVal('quantity') || getVal('qty'));\n    const unit_price_ht = toNum(getVal('unit_price_ht'));\n    if (qty === null || unit_price_ht === null) continue;\n    let description = String(getVal('description') || '').split(/\\r?\\n/)[0].trim();\n    description = description.replace(/\\s{2,}/g, ' ');\n    const line_amount = toNum(getVal('line_amount_ht')) ?? (qty * unit_price_ht);\n    const tax_rate = toNum(getVal('vat_rate') || getVal('tax_rate')) ?? 0;\n    products.push({ type: 'product', document_number, line_no: parseInt(getVal('line_number')) || i, sku: getVal('sku'), description, qty, unit: getVal('unit'), unit_price_ht, discount: toNum(getVal('discount')) ?? 0, tax_rate, line_total_ht: line_amount });\n  }\n  return { client: { type: 'client', source_type, document_number, document_date, currency, customer_code, customer_name, customer_vat, supplier_name, supplier_vat, NumeroClient: numeroClient, total_ht, total_tva, total_ttc }, products };\n}\n\nconst items = $input.all();\nconst out = [];\n\nfor (const it of items) {\n  const j = it.json || {};\n  let rawText = '';\n  for (const k of RAW_TEXT_KEYS) { if (typeof j[k] === 'string' && j[k].trim()) { rawText = j[k]; break; } }\n  if (!rawText) continue;\n  const cleaned = stripCodeFences(rawText);\n  const structured = parseCsvToStructured(cleaned);\n  if (!structured) { out.push({ json: { error: 'Unable to parse CSV', rawPreview: rawText.substring(0, 300) } }); continue; }\n  if (!structured.products.length) { out.push({ json: { error: 'Aucune ligne produit valide', doc: structured.client.document_number || '' } }); continue; }\n  const csvRows = [HEADERS.map(csvEscape).join(DELIM)];\n  for (const prod of structured.products) {\n    const row = { source_type: structured.client.source_type, document_number: structured.client.document_number, document_date: structured.client.document_date, currency: structured.client.currency, customer_code: structured.client.customer_code, customer_name: structured.client.customer_name, customer_vat: structured.client.customer_vat, supplier_name: structured.client.supplier_name, supplier_vat: structured.client.supplier_vat, line_no: prod.line_no, sku: prod.sku, description: prod.description, qty: prod.qty, unit: prod.unit, unit_price_ht: prod.unit_price_ht, discount: prod.discount, tax_rate: prod.tax_rate, line_total_ht: prod.line_total_ht, total_ht: structured.client.total_ht, total_tva: structured.client.total_tva, total_ttc: structured.client.total_ttc };\n    csvRows.push(HEADERS.map(h => csvEscape(row[h] ?? '')).join(DELIM));\n  }\n  let payload = csvRows.join(NL) + NL;\n  if (addBom) payload = '\\uFEFF' + payload;\n  const data = Buffer.from(payload, 'utf8').toString('base64');\n  const fileName = `${structured.client.source_type}_${structured.client.document_number || 'doc'}.csv`;\n  out.push({ json: { ...structured.client, ok: true, fileName, nb_products: structured.products.length }, binary: { file: { data, mimeType: 'text/csv', fileName, fileExtension: 'csv' } } });\n  structured.products.forEach((product, idx) => {\n    out.push({ json: { ...product, ok: true, parent_document: structured.client.document_number, parent_customer: structured.client.NumeroClient, parent_customer_code: structured.client.customer_code, product_index: idx + 1 } });\n  });\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 240],
+      "id": "6ec77326-3796-4437-9e8c-24571e766991",
+      "name": "création csv"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "c27427eb-4fd0-4fea-a305-0f07cc5d0867",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "client",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [128, 336],
+      "id": "32cb3e36-e3aa-4b4a-8f0b-0edad5d7815b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appB7GjlNkBXiZjB2",
+          "mode": "list",
+          "cachedResultName": "Pellet CRM",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHe0EZznaMuFqtF",
+          "mode": "list",
+          "cachedResultName": "Contacts",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2/tblHe0EZznaMuFqtF"
+        },
+        "filterByFormula": "={code contact} = '{{$json.NumeroClient}}'",
+        "returnAll": false,
+        "limit": 1,
+        "options": { "fields": ["code contact"] }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [432, 224],
+      "id": "74aa2d4c-bca1-496b-ba59-cf911d8c8bd4",
+      "name": "Search records",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "406144ed-b49f-4e53-abf3-afcde8150639",
+              "name": "NumeroClient",
+              "value": "={{$json.fields && $json.fields[\"code contact\"] ? $json.fields[\"code contact\"] : \"\"}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [736, 224],
+      "id": "d9f3f393-2bba-4693-855a-d6eef0fd27d3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [{ "field1": "code contact", "field2": "NumeroClient" }]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1056, 320],
+      "id": "77e6f259-6aec-4c89-83c0-e601720a6a76",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Fusionner les données du PDF + Contact Airtable\n */\nconst items = $input.all();\nconst out = [];\nfor (const item of items) {\n  const j = item.json || {};\n  const contactId = j.id || null;\n  const contactFields = j.fields || {};\n  const NumeroClient = j.NumeroClient || contactFields['code contact'] || '';\n  const document_number = j.document_number || '';\n  const document_date = j.document_date || '';\n  const total_ttc = j.total_ttc || 0;\n  const currency = j.currency || 'EUR';\n  const party_customer = j.party_customer || j.customer_name || '';\n  out.push({\n    json: {\n      client_key: contactId,\n      contactId: contactId,\n      NumeroClient: NumeroClient,\n      document_number: document_number,\n      document_date: document_date,\n      total_ttc: parseFloat(String(total_ttc).replace(',', '.')) || 0,\n      currency: currency,\n      customer_name: party_customer,\n      _contactFound: !!contactId,\n      _contactName: contactFields.Name || contactFields['code contact'] || '',\n      _hasNumeroClient: !!j.NumeroClient,\n      _hasDocNumber: !!j.document_number\n    },\n    binary: item.binary\n  });\n}\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1280, 320],
+      "id": "997ec8ab-4b5b-4b7d-9cd0-2511c3e4f1ce",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "client_key",
+        "options": { "disableDotNotation": false, "removeOtherFields": false }
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [1504, 320],
+      "id": "7e7d845f-612d-4381-8afe-8d25e29a8d64",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appB7GjlNkBXiZjB2",
+          "mode": "list",
+          "cachedResultName": "Pellet CRM",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxlWQXkD67UKTI4",
+          "mode": "list",
+          "cachedResultName": "Commandes Clients",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2/tblxlWQXkD67UKTI4"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date de commande": "={{ $json.document_date }}",
+            "Montant total TTC": "={{ $json.total_ttc }}",
+            "Identifiant de commande": "={{ $json.document_number }}",
+            "relance aout 2025": false,
+            "Client": "={{ $json.NumeroClient }}",
+            "OK": false
+          },
+          "matchingColumns": ["Identifiant de commande"],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": { "typecast": true }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1696, 320],
+      "id": "3d49cdf4-9e62-45a5-bf59-a50bfadd4abd",
+      "name": "Créer dans Airtable2",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const toNum = (v, def = undefined) => { if (v === null || v === undefined || v === '') return def; const s = String(v).replace(/\\s| /g, '').replace(/,(?=\\d{1,2}(?!\\d))/g, '.'); const n = Number(s.replace(/[^0-9.\\-]/g, '')); return Number.isFinite(n) ? n : def; };\nconst toISODate = (d, def = undefined) => { if (!d) return def; const s = String(d).trim(); const m = s.match(/^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/); if (m) return `${m[3]}-${m[2]}-${m[1]}`; const dt = new Date(s); if (!isNaN(dt.getTime())) return dt.toISOString().slice(0,10); return def; };\nconst str = (v, def = undefined) => { if (v === null || v === undefined) return def; const s = String(v).trim(); return s.length ? s : def; };\nconst joiner = ', ';\nfunction normalizeProductLine(src, defaults) { const libelle = str(src.libelle) ?? str(src.description) ?? `Produit ${src.product_index ?? ''}`.trim(); const qty = toNum(src.quantite) ?? toNum(src.qty) ?? 1; const unitHT = toNum(src.prix_unitaire_ht ?? src.unit_price_ht); const totalHT = toNum(src.total_ht); const totalTVA = toNum(src.total_tva); const totalTTC = toNum(src.total_ttc); const tvaRate = toNum(src.taux_tva ?? src.vat_rate); return { Produits: libelle, Nombres: qty, unit_price_ht_num: unitHT, total_ht_num: totalHT, total_tva_num: totalTVA, total_ttc_num: totalTTC, tva_rate_num: tvaRate, document_date_iso: defaults.document_date_iso, document_id: defaults.document_id }; }\nconst incoming = $input.all();\nconst groups = new Map();\nfor (let idx = 0; idx < incoming.length; idx++) { const src = incoming[idx].json || {}; const documentId = str(src.NumeroDocument) ?? str(src.document_number) ?? str(src.parent_document) ?? 'Sans numéro'; const documentDateISO = toISODate(src.document_date) ?? toISODate(src.DateDocument) ?? toISODate(src.date); if (!groups.has(documentId)) { groups.set(documentId, { meta: { document_id: documentId, document_date_iso: documentDateISO }, lines: [] }); } const g = groups.get(documentId); if (!g.meta.document_date_iso && documentDateISO) g.meta.document_date_iso = documentDateISO; if (Array.isArray(src.Produits) && src.Produits.length) { for (let i = 0; i < src.Produits.length; i++) { g.lines.push(normalizeProductLine(src.Produits[i] || {}, { document_date_iso: g.meta.document_date_iso, document_id: documentId })); } continue; } const isProductLine = src.type === 'product' || src.description != null || src.qty != null || src.product_index != null; if (isProductLine) g.lines.push(normalizeProductLine(src, { document_date_iso: g.meta.document_date_iso, document_id: documentId })); }\nconst out = [];\nfor (const [docId, group] of groups.entries()) { const L = group.lines; if (!L.length) continue; const concat = (arr) => arr.map(v => v == null ? '' : String(v)).join(joiner); out.push({ json: { \"Commandes Clients\": docId, \"Produits\": concat(L.map(l => l.Produits)), \"Nombres\": concat(L.map(l => l.Nombres)), \"unit_price_ht_num\": concat(L.map(l => l.unit_price_ht_num ?? '')), \"total_ht_num\": concat(L.map(l => l.total_ht_num ?? '')), \"total_tva_num\": concat(L.map(l => l.total_tva_num ?? '')), \"total_ttc_num\": concat(L.map(l => l.total_ttc_num ?? '')), \"tva_rate_num\": concat(L.map(l => l.tva_rate_num ?? '')), \"document_date_iso\": group.meta.document_date_iso } }); }\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [352, 512],
+      "id": "52d0eaee-fcb5-4a65-861d-dce82c2a96d7",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appB7GjlNkBXiZjB2",
+          "mode": "list",
+          "cachedResultName": "Pellet CRM",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxlWQXkD67UKTI4",
+          "mode": "list",
+          "cachedResultName": "Commandes Clients",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2/tblxlWQXkD67UKTI4"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "relance aout 2025": false,
+            "Nombres de produits": "={{$json.Nombres}}",
+            "prix unité": "={{$json[\"unit_price_ht_num\"]}}",
+            "Identifiant de commande": "={{$json[\"Commandes Clients\"]}}",
+            "produit": "={{$json.Produits}}",
+            "OK": false,
+            "Montant total TTC": 0
+          },
+          "matchingColumns": ["Identifiant de commande"],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": { "typecast": true }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [560, 512],
+      "id": "7fb224d2-05a3-4f71-912c-5af194ba3c2f",
+      "name": "Créer dans Airtable",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": { "amount": 20 },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [720, 512],
+      "id": "0896f20a-68ba-419b-ac02-fccccfdb30f2",
+      "name": "Wait1",
+      "webhookId": "9b3bb68e-5942-4a60-9a2e-aaa87d35a9a8"
+    },
+    {
+      "parameters": { "amount": 20 },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1872, 320],
+      "id": "e204a647-f9c9-4bee-9981-e5595f26f1c4",
+      "name": "Wait",
+      "webhookId": "9b3bb68e-5942-4a60-9a2e-aaa87d35a9a8"
+    },
+    {
+      "parameters": { "errorMessage": "={{$json.message}}" },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [-768, 400],
+      "id": "b0c6f79e-82d9-41ed-b857-abe86d853d91",
+      "name": "Stop and Error1"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1138551341598388235",
+          "mode": "list",
+          "cachedResultName": "Numitys",
+          "cachedResultUrl": "https://discord.com/channels/1138551341598388235"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1418745640732725289",
+          "mode": "list",
+          "cachedResultName": "automatisation-devis-factures",
+          "cachedResultUrl": "https://discord.com/channels/1138551341598388235/1418745640732725289"
+        },
+        "content": "=\n📦 Facture : {{ $json.fields[\"Identifiant de commande\"] }}\n💰 Prix TTC : {{ $json.fields[\"Montant total TTC\"] }}€\n👤 Client : {{ $json.fields[\"Prénom\"] }} | {{ $json.fields[\"Nom contact\"] }}\n📧 Email : {{ $json.fields[\"Email contact\"] }}\n📞 Téléphone : {{ $json.fields[\"Téléphone contact\"] }}\n📅 Date de commande : {{ $json.fields[\"Date de commande\"] }}\n\n-----",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [2048, 320],
+      "id": "eb5cdd78-c2f0-45ff-b50d-cf07827f9f73",
+      "name": "Send a message",
+      "credentials": {
+        "discordBotApi": {
+          "id": "REMPLACE_PAR_TON_ID_DISCORD",
+          "name": "Discord Bot numitys"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Extract data from PDF": { "main": [[{ "node": "Code in JavaScript1", "type": "main", "index": 0 }]] },
+    "Email Trigger (IMAP)2": { "main": [[{ "node": "Détecter PDF2", "type": "main", "index": 0 }]] },
+    "Détecter PDF2": { "main": [[{ "node": "If3", "type": "main", "index": 0 }]] },
+    "If3": { "main": [[{ "node": "Extract data from PDF", "type": "main", "index": 0 }], [{ "node": "Stop and Error1", "type": "main", "index": 0 }]] },
+    "création csv": { "main": [[{ "node": "If", "type": "main", "index": 0 }]] },
+    "Search records": { "main": [[{ "node": "Edit Fields", "type": "main", "index": 0 }]] },
+    "Remove Duplicates": { "main": [[{ "node": "Créer dans Airtable2", "type": "main", "index": 0 }]] },
+    "Code in JavaScript": { "main": [[{ "node": "Remove Duplicates", "type": "main", "index": 0 }]] },
+    "Merge": { "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]] },
+    "If": { "main": [[{ "node": "Merge", "type": "main", "index": 1 }, { "node": "Search records", "type": "main", "index": 0 }], [{ "node": "Code1", "type": "main", "index": 0 }]] },
+    "Code1": { "main": [[{ "node": "Créer dans Airtable", "type": "main", "index": 0 }]] },
+    "Edit Fields": { "main": [[{ "node": "Merge", "type": "main", "index": 0 }]] },
+    "Code in JavaScript1": { "main": [[{ "node": "création csv", "type": "main", "index": 0 }]] },
+    "Créer dans Airtable2": { "main": [[{ "node": "Wait", "type": "main", "index": 0 }]] },
+    "Créer dans Airtable": { "main": [[{ "node": "Wait1", "type": "main", "index": 0 }]] },
+    "Wait": { "main": [[{ "node": "Send a message", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "71ungyDdk7XNtFUz"
+  },
+  "tags": [{ "name": "pellet distribution" }]
+}
