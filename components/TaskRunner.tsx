@@ -150,6 +150,8 @@ export default function TaskRunner({
         }
 
         setBatchResults(results);
+        // Pour 1 seul fichier, alimenter aussi displayText pour le bouton Copier
+        if (results.length === 1) setDisplayText(results[0].text);
         setStatus("success");
       } else {
         let body: Record<string, unknown>;
