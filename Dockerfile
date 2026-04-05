@@ -20,6 +20,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_URL="file:/app/data/db.sqlite"
+ENV AUTH_SECRET="change-me-in-dokploy-env-vars"
+ENV NEXTAUTH_SECRET="change-me-in-dokploy-env-vars"
 
 RUN apk add --no-cache libc6-compat
 RUN addgroup --system --gid 1001 nodejs
