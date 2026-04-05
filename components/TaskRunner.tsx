@@ -50,6 +50,25 @@ function formatResult(data: unknown): string {
   return JSON.stringify(data, null, 2);
 }
 
+function copyToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text: string) {
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.style.position = "fixed";
+  el.style.opacity = "0";
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
+
 async function callProxy(
   webhookPath: string,
   body: Record<string, unknown>
@@ -149,9 +168,12 @@ export default function TaskRunner({
           }
         }
 
-        setBatchResults(results);
-        // Pour 1 seul fichier, alimenter aussi displayText pour le bouton Copier
-        if (results.length === 1) setDisplayText(results[0].text);
+        // 1 fichier → résultat simple (pas de batch UI)
+        if (results.length === 1) {
+          setDisplayText(results[0].text);
+        } else {
+          setBatchResults(results);
+        }
         setStatus("success");
       } else {
         let body: Record<string, unknown>;
@@ -409,7 +431,7 @@ export default function TaskRunner({
                     </p>
                     {r.status === "success" && (
                       <button
-                        onClick={() => navigator.clipboard.writeText(r.text)}
+                        onClick={() => copyToClipboard(r.text)}
                         className="font-mono text-xs text-dim hover:text-accent transition-colors ml-3 flex-shrink-0"
                       >
                         Copier
@@ -438,7 +460,7 @@ export default function TaskRunner({
             </button>
             {status === "success" && !isBatch && (
               <button
-                onClick={() => navigator.clipboard.writeText(displayText)}
+                onClick={() => copyToClipboard(displayText)}
                 className="px-4 py-3 border border-border hover:border-muted text-dim hover:text-text rounded-xl transition-colors font-mono text-xs"
               >
                 Copier
