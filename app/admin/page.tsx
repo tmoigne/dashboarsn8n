@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useInstances } from "@/hooks/useInstances";
-import { Users, Settings, Server, Key, ArrowLeft, Check } from "lucide-react";
+import { Users, Key, ArrowLeft, Check, Wifi } from "lucide-react";
 
 interface SessionUser {
   id: string;
@@ -16,13 +15,18 @@ interface SessionUser {
 export default function AdminPage() {
   const router = useRouter();
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [claudeKey, setClaudeKey] = useState("");
-  const [claudeKeySaving, setClaudeKeySaving] = useState(false);
-  const [claudeKeySaved, setClaudeKeySaved] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
-  const { instances, activeInstance, add, remove, switchTo } = useInstances();
 
-  // Auth guard — superadmin only
+  const [n8nUrl, setN8nUrl] = useState("");
+  const [n8nKey, setN8nKey] = useState("");
+  const [claudeKey, setClaudeKey] = useState("");
+
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<"ok" | "error" | null>(null);
+
+  // superadmin only
   useEffect(() => {
     fetch("/api/auth/session")
       .then(r => r.json())
@@ -38,6 +42,8 @@ export default function AdminPage() {
     fetch("/api/config")
       .then(r => r.json())
       .then(cfg => {
+        if (cfg.n8n_base_url)   setN8nUrl(cfg.n8n_base_url);
+        if (cfg.n8n_api_key)    setN8nKey(cfg.n8n_api_key);
         if (cfg.claude_api_key) setClaudeKey(cfg.claude_api_key);
         setConfigLoaded(true);
       })
@@ -46,16 +52,40 @@ export default function AdminPage() {
 
   useEffect(() => { loadConfig(); }, [loadConfig]);
 
-  const saveClaudeKey = async () => {
-    setClaudeKeySaving(true);
+  const saveAll = async () => {
+    setSaving(true);
     await fetch("/api/config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ claude_api_key: claudeKey }),
+      body: JSON.stringify({
+        n8n_base_url:   n8nUrl.trim(),
+        n8n_api_key:    n8nKey.trim(),
+        claude_api_key: claudeKey.trim(),
+      }),
     });
-    setClaudeKeySaving(false);
-    setClaudeKeySaved(true);
-    setTimeout(() => setClaudeKeySaved(false), 2000);
+    setSaving(false);
+    setSaved(true);
+    setTestResult(null);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const testConnection = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/instances/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ baseUrl: n8nUrl.trim(), apiKey: n8nKey.trim() }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const data = await res.json();
+      setTestResult(data.ok ? "ok" : "error");
+    } catch {
+      setTestResult("error");
+    } finally {
+      setTesting(false);
+    }
   };
 
   if (!session) return null;
@@ -72,115 +102,95 @@ export default function AdminPage() {
         </span>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+      <main className="max-w-2xl mx-auto px-6 py-8 space-y-10">
 
-        {/* Quick links */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <Link href="/admin/users" className="flex flex-col gap-3 bg-surface border border-border hover:border-green/40 rounded-xl p-5 transition-colors group">
-            <Users size={20} className="text-dim group-hover:text-green transition-colors" />
-            <div>
-              <p className="font-semibold text-text text-sm">Comptes</p>
-              <p className="font-mono text-xs text-dim mt-0.5">Gérer les utilisateurs</p>
-            </div>
-          </Link>
-          <Link href="/settings" className="flex flex-col gap-3 bg-surface border border-border hover:border-green/40 rounded-xl p-5 transition-colors group">
-            <Server size={20} className="text-dim group-hover:text-green transition-colors" />
-            <div>
-              <p className="font-semibold text-text text-sm">Instances n8n</p>
-              <p className="font-mono text-xs text-dim mt-0.5">Connexions n8n</p>
-            </div>
-          </Link>
-          <Link href="/" className="flex flex-col gap-3 bg-surface border border-border hover:border-green/40 rounded-xl p-5 transition-colors group">
-            <Settings size={20} className="text-dim group-hover:text-green transition-colors" />
-            <div>
-              <p className="font-semibold text-text text-sm">Dashboard</p>
-              <p className="font-mono text-xs text-dim mt-0.5">Retour à l'app</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Instances n8n */}
+        {/* Connexion n8n */}
         <section className="space-y-4">
-          <p className="font-mono text-xs text-dim uppercase tracking-widest">
-            Instances n8n — {instances.length}
+          <p className="font-mono text-xs text-dim uppercase tracking-widest flex items-center gap-2">
+            <Wifi size={12} /> Connexion n8n
           </p>
-          {instances.length === 0 ? (
-            <p className="text-dim text-sm font-mono">Aucune instance configurée.</p>
-          ) : (
+          {configLoaded && (
             <div className="space-y-3">
-              {instances.map(inst => (
-                <div
-                  key={inst.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                    inst.id === activeInstance?.id
-                      ? "border-green/40 bg-green/5"
-                      : "border-border bg-surface"
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {inst.id === activeInstance?.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-green" />
-                      )}
-                      <p className="font-semibold text-text text-sm">{inst.name}</p>
-                    </div>
-                    <p className="font-mono text-xs text-dim truncate mt-0.5">{inst.baseUrl}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    {inst.id !== activeInstance?.id && (
-                      <button
-                        onClick={() => switchTo(inst.id)}
-                        className="font-mono text-xs text-dim hover:text-green transition-colors"
-                      >
-                        Activer
-                      </button>
-                    )}
-                    <button
-                      onClick={() => remove(inst.id)}
-                      className="font-mono text-xs text-dim hover:text-red-400 transition-colors"
-                    >
-                      ✕
-                    </button>
-                  </div>
+              <div>
+                <label className="font-mono text-xs text-dim uppercase tracking-widest block mb-2">URL de base</label>
+                <input
+                  type="url"
+                  value={n8nUrl}
+                  onChange={e => { setN8nUrl(e.target.value); setTestResult(null); }}
+                  placeholder="https://n8n.mondomaine.com"
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
+                />
+                <p className="font-mono text-xs text-dim/50 mt-1">Sans slash final — ex: http://192.168.1.50:5678</p>
+              </div>
+              <div>
+                <label className="font-mono text-xs text-dim uppercase tracking-widest block mb-2">Clé API n8n</label>
+                <input
+                  type="password"
+                  value={n8nKey}
+                  onChange={e => { setN8nKey(e.target.value); setTestResult(null); }}
+                  placeholder="••••••••••••••••"
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
+                />
+              </div>
+              {testResult && (
+                <div className={`rounded-xl border px-4 py-3 ${testResult === "ok" ? "border-green-800 bg-green-950/30 text-green-400" : "border-red-800 bg-red-950/30 text-red-400"}`}>
+                  <p className="font-mono text-xs">
+                    {testResult === "ok" ? "✓ Connexion OK — API n8n accessible" : "✗ Échec — vérifiez l'URL et la clé API"}
+                  </p>
                 </div>
-              ))}
+              )}
+              <button
+                onClick={testConnection}
+                disabled={testing || !n8nUrl || !n8nKey}
+                className="font-mono text-xs px-4 py-2 border border-border hover:border-muted disabled:opacity-30 text-dim hover:text-text rounded-xl transition-colors uppercase tracking-widest"
+              >
+                {testing ? "Test…" : "Tester la connexion"}
+              </button>
             </div>
           )}
-          <Link
-            href="/settings"
-            className="inline-flex items-center gap-2 font-mono text-xs text-dim hover:text-green transition-colors"
-          >
-            <Server size={12} /> Gérer les instances →
-          </Link>
         </section>
 
-        {/* Claude API key */}
+        {/* Clé Claude */}
         <section className="space-y-4">
           <p className="font-mono text-xs text-dim uppercase tracking-widest flex items-center gap-2">
             <Key size={12} /> Clé API Claude (Anthropic)
           </p>
           {configLoaded && (
-            <div className="flex gap-3">
-              <input
-                type="password"
-                value={claudeKey}
-                onChange={e => setClaudeKey(e.target.value)}
-                placeholder="sk-ant-••••••••••••••••"
-                className="flex-1 bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
-              />
-              <button
-                onClick={saveClaudeKey}
-                disabled={claudeKeySaving}
-                className="flex items-center gap-2 px-4 py-3 bg-green-dark hover:bg-green disabled:opacity-40 text-white rounded-xl font-mono text-xs uppercase tracking-widest transition-colors"
-              >
-                {claudeKeySaved ? <Check size={14} /> : null}
-                {claudeKeySaving ? "..." : claudeKeySaved ? "Sauvegardé" : "Sauvegarder"}
-              </button>
-            </div>
+            <input
+              type="password"
+              value={claudeKey}
+              onChange={e => setClaudeKey(e.target.value)}
+              placeholder="sk-ant-••••••••••••••••"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 font-mono text-sm text-text placeholder-dim focus:outline-none focus:border-green transition-colors"
+            />
           )}
-          <p className="font-mono text-xs text-dim/50">
-            Stockée en base de données — partagée avec tous les utilisateurs.
+        </section>
+
+        {/* Save */}
+        <button
+          onClick={saveAll}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-3 bg-green-dark hover:bg-green disabled:opacity-40 text-white rounded-xl font-mono text-sm uppercase tracking-widest transition-colors"
+        >
+          {saved ? <Check size={14} /> : null}
+          {saving ? "Enregistrement…" : saved ? "Sauvegardé" : "Sauvegarder les paramètres"}
+        </button>
+
+        {/* Comptes */}
+        <section className="pt-6 border-t border-border space-y-4">
+          <p className="font-mono text-xs text-dim uppercase tracking-widest flex items-center gap-2">
+            <Users size={12} /> Comptes collaborateurs
           </p>
+          <p className="text-dim text-sm">
+            Créez des comptes et choisissez quelles automatisations chaque collaborateur peut utiliser.
+          </p>
+          <Link
+            href="/admin/users"
+            className="inline-flex items-center gap-2 bg-surface border border-border hover:border-green/40 rounded-xl px-5 py-3 font-mono text-sm text-text transition-colors"
+          >
+            <Users size={15} className="text-dim" />
+            Gérer les comptes →
+          </Link>
         </section>
 
       </main>

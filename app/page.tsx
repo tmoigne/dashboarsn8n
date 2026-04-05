@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import TaskRunner from "@/components/TaskRunner";
 import HistoryPanel from "@/components/history/HistoryPanel";
 import ClaudeUsage from "@/components/ClaudeUsage";
@@ -10,7 +8,6 @@ import UsageStats from "@/components/UsageStats";
 import StatsBar from "@/components/StatsBar";
 import { TASKS } from "@/lib/tasks";
 import { useHistory } from "@/hooks/useHistory";
-import { useInstances } from "@/hooks/useInstances";
 import type { Task, HistoryEntry } from "@/types";
 
 const ICONS: Record<string, string> = {
@@ -46,30 +43,37 @@ const CATEGORY: Record<string, string> = {
 };
 
 export default function HomePage() {
-  const router = useRouter();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [initialText, setInitialText] = useState("");
   const [showHistory, setShowHistory] = useState(false);
-  const [showInstanceMenu, setShowInstanceMenu] = useState(false);
   const [allowedTaskIds, setAllowedTaskIds] = useState<string[] | null>(null);
+  const [n8nConfigured, setN8nConfigured] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string>("user");
   const { history, add: addHistory, clear: clearHistory } = useHistory();
-  const { instances, activeInstance, switchTo } = useInstances();
 
   useEffect(() => {
     fetch("/api/me/tasks")
       .then((r) => r.json())
       .then((data) => {
-        if (data.all) setAllowedTaskIds(null); // null = all tasks
+        if (data.all) setAllowedTaskIds(null);
         else setAllowedTaskIds(data.taskIds ?? []);
       })
       .catch(() => setAllowedTaskIds(null));
+
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((cfg) => setN8nConfigured(!!(cfg?.n8n_base_url && cfg?.n8n_api_key)))
+      .catch(() => setN8nConfigured(false));
+
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((s) => { if (s?.user?.role) setUserRole(s.user.role); })
+      .catch(() => {});
   }, []);
 
   const visibleTasks = allowedTaskIds === null
     ? TASKS
     : TASKS.filter((t) => allowedTaskIds.includes(t.id));
-
-  const notConfigured = instances.length === 0;
 
   const handleReload = (entry: HistoryEntry) => {
     const task = TASKS.find((t) => t.id === entry.taskId);
@@ -81,45 +85,13 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-surface border-b border-border h-12 flex items-center justify-between px-6">
         <span className="font-mono text-sm text-text font-semibold">Tableau de bord</span>
         <div className="flex items-center gap-4">
-          {instances.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setShowInstanceMenu((v) => !v)}
-                className="flex items-center gap-2 font-mono text-xs text-dim hover:text-text transition-colors"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-green" />
-                {activeInstance?.name ?? "Instance"}
-                <span className="text-dim/40">▾</span>
-              </button>
-              {showInstanceMenu && (
-                <div className="absolute right-0 top-6 mt-1 w-56 bg-surface border border-border rounded-lg overflow-hidden z-50 shadow-xl">
-                  {instances.map((inst) => (
-                    <button
-                      key={inst.id}
-                      onClick={() => { switchTo(inst.id); setShowInstanceMenu(false); }}
-                      className={`w-full text-left px-4 py-3 font-mono text-xs transition-colors hover:bg-muted ${
-                        inst.id === activeInstance?.id ? "text-green" : "text-dim"
-                      }`}
-                    >
-                      {inst.name}
-                      <span className="block text-dim/40 text-xs truncate mt-0.5">{inst.baseUrl}</span>
-                    </button>
-                  ))}
-                  <div className="border-t border-border">
-                    <button
-                      onClick={() => { setShowInstanceMenu(false); router.push("/settings"); }}
-                      className="w-full text-left px-4 py-3 font-mono text-xs text-dim hover:text-text transition-colors hover:bg-muted"
-                    >
-                      + Gérer les instances
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+          {["admin", "superadmin"].includes(userRole) && (
+            <a href="/admin" className="font-mono text-xs text-dim hover:text-text transition-colors">
+              Admin
+            </a>
           )}
           <button
             onClick={() => setShowHistory((v) => !v)}
@@ -135,32 +107,31 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Bannière configuration manquante */}
-      {notConfigured && (
+      {n8nConfigured === false && ["admin", "superadmin"].includes(userRole) && (
         <div className="bg-yellow-950/40 border-b border-yellow-800/50 px-6 py-3 flex items-center justify-between gap-4">
           <p className="font-mono text-xs text-yellow-400">
-            ⚠ Aucune instance n8n configurée — les tâches ne fonctionneront pas.
+            ⚠ Connexion n8n non configurée — rendez-vous dans Admin pour l'ajouter.
           </p>
-          <Link
-            href="/settings"
+          <a
+            href="/admin"
             className="flex-shrink-0 font-mono text-xs px-3 py-1.5 bg-yellow-800/40 hover:bg-yellow-700/40 text-yellow-300 rounded-lg transition-colors"
           >
             Configurer →
-          </Link>
+          </a>
         </div>
       )}
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        <StatsBar history={history} instanceName={activeInstance?.name ?? null} />
+        <StatsBar history={history} instanceName={n8nConfigured ? "n8n" : null} />
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-mono text-xs text-dim uppercase tracking-widest">
-            Tâches disponibles — {visibleTasks.length}
+            Automatisations disponibles — {visibleTasks.length}
           </h2>
           <span className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${notConfigured ? "bg-yellow-500" : "bg-green"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${n8nConfigured ? "bg-green" : "bg-yellow-500"}`} />
             <span className="font-mono text-xs text-dim">
-              {notConfigured ? "Non connecté" : "Webhooks actifs"}
+              {n8nConfigured ? "n8n connecté" : "n8n non configuré"}
             </span>
           </span>
         </div>
@@ -174,7 +145,7 @@ export default function HomePage() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${notConfigured ? "bg-yellow-500/50" : "bg-green"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${n8nConfigured ? "bg-green" : "bg-yellow-500/50"}`} />
                   <span className="font-mono text-base text-text/70 group-hover:text-green transition-colors">
                     {ICONS[task.icon] ?? "◆"}
                   </span>
