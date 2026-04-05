@@ -13,14 +13,6 @@ interface FormState {
 
 const EMPTY_FORM: FormState = { name: "", baseUrl: "", apiKey: "" };
 
-const WEBHOOKS = [
-  "/webhook/ocr-image",
-  "/webhook/extract-pdf",
-  "/webhook/summarize",
-  "/webhook/translate",
-  "/webhook/classify",
-  "/webhook/ping",
-];
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -33,6 +25,17 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<"ok" | "error" | null>(null);
   const [claudeKey, setClaudeKey] = useState("");
   const [claudeKeySaving, setClaudeKeySaving] = useState(false);
+
+  // Restrict to admin/superadmin
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then(r => r.json())
+      .then(s => {
+        const role = s?.user?.role ?? "";
+        if (!["admin", "superadmin"].includes(role)) router.push("/");
+      })
+      .catch(() => router.push("/"));
+  }, [router]);
 
   useEffect(() => {
     fetch("/api/config")
@@ -72,18 +75,14 @@ export default function SettingsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch("/api/proxy", {
+      const res = await fetch("/api/instances/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          __webhookPath: "/webhook/ping",
-          __apiKey: form.apiKey,
-          __baseUrl: form.baseUrl,
-          ping: true,
-        }),
-        signal: AbortSignal.timeout(8000),
+        body: JSON.stringify({ baseUrl: form.baseUrl, apiKey: form.apiKey }),
+        signal: AbortSignal.timeout(10000),
       });
-      setTestResult(res.ok ? "ok" : "error");
+      const data = await res.json();
+      setTestResult(data.ok ? "ok" : "error");
     } catch {
       setTestResult("error");
     } finally {
@@ -242,8 +241,8 @@ export default function SettingsPage() {
               >
                 <p className="font-mono text-xs">
                   {testResult === "ok"
-                    ? "✓ Connexion OK — /webhook/ping répond"
-                    : "✗ Échec — vérifie l'URL et la clé"}
+                    ? "✓ Connexion OK — API n8n accessible"
+                    : "✗ Échec — vérifie l'URL et la clé API n8n"}
                 </p>
               </div>
             )}
@@ -307,19 +306,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Webhooks info */}
-        <div className="mt-10 p-4 bg-surface border border-border rounded-xl">
-          <p className="font-mono text-xs text-dim uppercase tracking-widest mb-3">
-            Webhooks attendus
-          </p>
-          <div className="space-y-1.5">
-            {WEBHOOKS.map((path) => (
-              <p key={path} className="font-mono text-xs text-dim/70">
-                {path}
-              </p>
-            ))}
-          </div>
-        </div>
       </main>
     </div>
   );

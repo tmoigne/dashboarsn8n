@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TaskRunner from "@/components/TaskRunner";
@@ -51,8 +51,23 @@ export default function HomePage() {
   const [initialText, setInitialText] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [showInstanceMenu, setShowInstanceMenu] = useState(false);
+  const [allowedTaskIds, setAllowedTaskIds] = useState<string[] | null>(null);
   const { history, add: addHistory, clear: clearHistory } = useHistory();
   const { instances, activeInstance, switchTo } = useInstances();
+
+  useEffect(() => {
+    fetch("/api/me/tasks")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.all) setAllowedTaskIds(null); // null = all tasks
+        else setAllowedTaskIds(data.taskIds ?? []);
+      })
+      .catch(() => setAllowedTaskIds(null));
+  }, []);
+
+  const visibleTasks = allowedTaskIds === null
+    ? TASKS
+    : TASKS.filter((t) => allowedTaskIds.includes(t.id));
 
   const notConfigured = instances.length === 0;
 
@@ -140,7 +155,7 @@ export default function HomePage() {
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-mono text-xs text-dim uppercase tracking-widest">
-            Tâches disponibles — {TASKS.length}
+            Tâches disponibles — {visibleTasks.length}
           </h2>
           <span className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${notConfigured ? "bg-yellow-500" : "bg-green"}`} />
@@ -151,7 +166,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {TASKS.map((task) => (
+          {visibleTasks.map((task) => (
             <button
               key={task.id}
               onClick={() => { setInitialText(""); setActiveTask(task); }}
