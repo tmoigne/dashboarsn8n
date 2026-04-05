@@ -148,4 +148,39 @@ export const TASKS: Task[] = [
     inputLabel: "Payload JSON",
     inputPlaceholder: '{ "key": "value" }',
   },
+
+  // ── Pellet Distribution ──────────────────────────────────────────────────
+  {
+    id: "pellet-ocr-livraison",
+    label: "OCR Bon de Livraison",
+    description: "Scanne un bon de livraison (photo ou PDF) et enregistre les données dans Airtable automatiquement",
+    icon: "ScanText",
+    webhookPath: "/webhook/pellet-ocr-livraison",
+    inputType: "document",
+    inputLabel: "Glisse une photo ou PDF du bon de livraison",
+    outputFormats: [
+      { id: "texte", label: "Texte" },
+      { id: "json", label: "JSON" },
+    ],
+  },
+  {
+    id: "pellet-correcteur-email",
+    label: "Correcteur Email Pro",
+    description: "Corrige et améliore un email commercial avant envoi — orthographe, grammaire et ton professionnel",
+    icon: "SpellCheck",
+    webhookPath: "/webhook/pellet-correcteur-email",
+    inputType: "text",
+    inputLabel: "Email à corriger",
+    inputPlaceholder: "Colle ton brouillon d'email ici...",
+  },
+  {
+    id: "pellet-fiche-client",
+    label: "Fiche Client → Airtable",
+    description: "Crée ou met à jour une fiche client dans le CRM Airtable depuis un texte libre ou formulaire",
+    icon: "ClipboardList",
+    webhookPath: "/webhook/pellet-fiche-client",
+    inputType: "text",
+    inputLabel: "Informations client",
+    inputPlaceholder: "Nom : Dupont\nPrénom : Jean\nEmail : jean@exemple.fr\nTél : 06 12 34 56 78\nVille : Lyon\nType de chauffage : poêle à pellets",
+  },
 ];

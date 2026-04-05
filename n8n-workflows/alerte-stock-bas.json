@@ -1,0 +1,74 @@
+{
+  "name": "Pellet — Alerte Stock Bas",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 24, "triggerAtHour": 8 }]
+        }
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000001",
+      "name": "Schedule 8h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblHe0EZznaMuFqtF", "mode": "id" },
+        "filterByFormula": "AND({Type} = 'Stock', {Quantité} > 0)",
+        "options": { "fields": ["Produit", "Quantité", "Seuil alerte", "Unité"] }
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000002",
+      "name": "Lire Stock Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Pellet CRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst alertes = [];\n\nfor (const item of items) {\n  const f = item.json.fields ?? item.json;\n  const produit = f['Produit'] ?? f['Nom'] ?? 'Inconnu';\n  const quantite = parseFloat(f['Quantité'] ?? f['Stock'] ?? 0);\n  const seuil = parseFloat(f['Seuil alerte'] ?? f['Seuil'] ?? 10);\n  const unite = f['Unité'] ?? 'tonnes';\n  \n  if (quantite <= seuil) {\n    alertes.push({ produit, quantite, seuil, unite });\n  }\n}\n\nif (alertes.length === 0) return [];\n\nconst lines = alertes.map(a => `• **${a.produit}** : ${a.quantite} ${a.unite} (seuil : ${a.seuil})`);\nconst message = `:warning: **Alerte Stock Bas — Pellet Distribution**\\n\\n${lines.join('\\n')}\\n\\n*Pensez à réapprovisionner !*`;\n\nreturn [{ json: { message, count: alertes.length } }];"
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000003",
+      "name": "Filtre Stock Bas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "e5f6a7b8-0005-0005-0005-000000000004",
+      "name": "Discord Alerte",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REMPLACE_PAR_TON_ID_DISCORD",
+          "name": "Discord Pellet Distribution"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule 8h": { "main": [[{ "node": "Lire Stock Airtable", "type": "main", "index": 0 }]] },
+    "Lire Stock Airtable": { "main": [[{ "node": "Filtre Stock Bas", "type": "main", "index": 0 }]] },
+    "Filtre Stock Bas": { "main": [[{ "node": "Discord Alerte", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "pellet-distribution" }],
+  "meta": { "templateId": "pellet-alerte-stock" }
+}

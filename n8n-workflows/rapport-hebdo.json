@@ -1,0 +1,74 @@
+{
+  "name": "Pellet — Rapport Hebdo Commandes & CA",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "weeks", "weeksInterval": 1, "triggerAtDay": [1], "triggerAtHour": 8 }]
+        }
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000001",
+      "name": "Schedule Lundi 8h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblxlWQXkD67UKTI4", "mode": "id" },
+        "filterByFormula": "AND(IS_AFTER({Date commande}, DATEADD(TODAY(), -7, 'days')), {Statut} != 'Annulée')",
+        "options": { "fields": ["Client", "Produits", "Montant", "Statut", "Date commande"] }
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000002",
+      "name": "Commandes semaine",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Pellet CRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (items.length === 0) {\n  return [{ json: { message: ':bar_chart: **Rapport Hebdo — Pellet Distribution**\\n\\nAucune commande cette semaine.' } }];\n}\n\nlet totalCA = 0;\nconst parStatut = {};\nconst lignes = [];\n\nfor (const item of items) {\n  const f = item.json.fields ?? item.json;\n  const montant = parseFloat(f['Montant'] ?? 0);\n  const statut = f['Statut'] ?? 'Inconnu';\n  const client = f['Client'] ?? '?';\n  totalCA += montant;\n  parStatut[statut] = (parStatut[statut] ?? 0) + 1;\n  lignes.push(`• ${client} — ${statut}${montant ? ` — ${montant} €` : ''}`);\n}\n\nconst statsStatut = Object.entries(parStatut)\n  .map(([s, n]) => `  ${s}: ${n}`)\n  .join('\\n');\n\nconst now = new Date();\nconst dateStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });\n\nconst message = `:bar_chart: **Rapport Hebdo — Pellet Distribution**\\n*Semaine du ${dateStr}*\\n\\n**Total commandes :** ${items.length}\\n**CA total :** ${totalCA.toFixed(2)} €\\n\\n**Par statut :**\\n${statsStatut}\\n\\n**Détail :**\\n${lignes.slice(0, 15).join('\\n')}${items.length > 15 ? `\\n… et ${items.length - 15} autres` : ''}`;\n\nreturn [{ json: { message, count: items.length, ca: totalCA } }];"
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000003",
+      "name": "Calcule Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "f6a7b8c9-0006-0006-0006-000000000004",
+      "name": "Discord Rapport",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REMPLACE_PAR_TON_ID_DISCORD",
+          "name": "Discord Pellet Distribution"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Lundi 8h": { "main": [[{ "node": "Commandes semaine", "type": "main", "index": 0 }]] },
+    "Commandes semaine": { "main": [[{ "node": "Calcule Stats", "type": "main", "index": 0 }]] },
+    "Calcule Stats": { "main": [[{ "node": "Discord Rapport", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "pellet-distribution" }],
+  "meta": { "templateId": "pellet-rapport-hebdo" }
+}

@@ -1,0 +1,128 @@
+{
+  "name": "Pellet — OCR Bon de Livraison → Airtable",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pellet-ocr-livraison",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "pellet-ocr-livraison"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst data = body.data ?? '';\nconst filename = body.filename ?? 'image.jpg';\nconst mime = body.mime ?? 'image/jpeg';\n\n// base64 peut contenir le préfixe data:image/...\nconst base64Clean = data.replace(/^data:[^;]+;base64,/, '');\n\nreturn [{ json: { base64: base64Clean, filename, mime } }];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Prépare Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "x-api-key", "value": "={{ $credentials.value }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-opus-4-6\",\n  \"max_tokens\": 1024,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"image\",\n          \"source\": {\n            \"type\": \"base64\",\n            \"media_type\": \"{{ $json.mime }}\",\n            \"data\": \"{{ $json.base64 }}\"\n          }\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"Tu es un assistant spécialisé dans la lecture de bons de livraison de pellets et bois. Extrais depuis ce bon de livraison:\\n- Numéro de bon\\n- Date de livraison\\n- Nom et adresse du client\\n- Produit(s) livré(s) (type, quantité, poids)\\n- Nom du livreur\\n- Remarques\\n\\nRéponds en JSON uniquement avec ces champs: { \\\"numero_bon\\\": \\\"\\\", \\\"date_livraison\\\": \\\"\\\", \\\"client_nom\\\": \\\"\\\", \\\"client_adresse\\\": \\\"\\\", \\\"produits\\\": [], \\\"livreur\\\": \\\"\\\", \\\"remarques\\\": \\\"\\\" }\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Claude Vision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REMPLACE_PAR_TON_ID_CLAUDE",
+          "name": "Claude API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst text = response.content?.[0]?.text ?? '{}';\n\nlet parsed = {};\ntry {\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(jsonMatch?.[0] ?? '{}');\n} catch(e) {\n  parsed = { raw: text };\n}\n\nreturn [{ json: parsed }];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblxlWQXkD67UKTI4", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Numéro bon": "={{ $json.numero_bon }}",
+            "Date livraison": "={{ $json.date_livraison }}",
+            "Client": "={{ $json.client_nom }}",
+            "Adresse livraison": "={{ $json.client_adresse }}",
+            "Produits": "={{ JSON.stringify($json.produits) }}",
+            "Livreur": "={{ $json.livreur }}",
+            "Remarques": "={{ $json.remarques }}",
+            "Statut": "Livré"
+          },
+          "schema": [],
+          "ignoreUnknownFields": true
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Airtable — Commandes",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Pellet CRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: $('Parse JSON').first().json }) }}"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Réponse",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Prépare Image", "type": "main", "index": 0 }]] },
+    "Prépare Image": { "main": [[{ "node": "Claude Vision", "type": "main", "index": 0 }]] },
+    "Claude Vision": { "main": [[{ "node": "Parse JSON", "type": "main", "index": 0 }]] },
+    "Parse JSON": { "main": [[{ "node": "Airtable — Commandes", "type": "main", "index": 0 }]] },
+    "Airtable — Commandes": { "main": [[{ "node": "Réponse", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "pellet-distribution" }],
+  "meta": { "templateId": "pellet-ocr-livraison" }
+}

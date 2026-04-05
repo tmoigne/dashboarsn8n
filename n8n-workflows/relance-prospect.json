@@ -1,0 +1,106 @@
+{
+  "name": "Pellet — Relance Prospects Inactifs",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "weeks", "weeksInterval": 1, "triggerAtDay": [2], "triggerAtHour": 9 }]
+        }
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000001",
+      "name": "Schedule Mardi 9h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblHe0EZznaMuFqtF", "mode": "id" },
+        "filterByFormula": "AND({Statut} = 'Prospect', {Email} != '', IS_BEFORE({Dernier contact}, DATEADD(TODAY(), -30, 'days')))",
+        "options": { "fields": ["Nom", "Prénom", "Email", "Téléphone", "Dernier contact", "Type chauffage", "Notes"] }
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000002",
+      "name": "Prospects inactifs",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Pellet CRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length === 0) return [];\n\nreturn items.map(item => {\n  const f = item.json.fields ?? item.json;\n  const prenom = f['Prénom'] ?? f['Prenom'] ?? '';\n  const nom = f['Nom'] ?? '';\n  const email = f['Email'] ?? '';\n  const typeChauffage = f['Type chauffage'] ?? 'pellets';\n  \n  const sujet = `Pellet Distribution — Offre spéciale ${new Date().getFullYear()}`;\n  const message = `Bonjour ${prenom || nom},\\n\\nNous espérons que vous allez bien.\\n\\nÀ l'approche de la saison de chauffe, nous souhaitons vous présenter nos offres actuelles en ${typeChauffage}.\\n\\nNous proposons :\\n• Pellets premium certifiés ENplus A1\\n• Livraison à domicile sous 48h\\n• Prix compétitifs avec remise fidélité\\n\\nN'hésitez pas à nous contacter pour obtenir un devis personnalisé ou pour toute question.\\n\\nCordialement,\\nL'équipe Pellet Distribution\\nTél : 06 XX XX XX XX\\ncommandes@pellet-distribution.fr`;\n  \n  return { json: { email, sujet, message, nom: `${prenom} ${nom}`.trim() } };\n});"
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000003",
+      "name": "Prépare Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "commandes@pellet-distribution.fr",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.sujet }}",
+        "text": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000004",
+      "name": "Email Relance",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "smtp": {
+          "id": "REMPLACE_PAR_TON_ID_SMTP",
+          "name": "SMTP Pellet Distribution"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst count = items.length;\nreturn [{ json: { message: `:envelope: **Relance prospects** — ${count} email(s) envoyé(s) aux prospects inactifs depuis 30 jours.` } }];"
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000005",
+      "name": "Résumé",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "b8c9d0e1-0008-0008-0008-000000000006",
+      "name": "Discord Résumé",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REMPLACE_PAR_TON_ID_DISCORD",
+          "name": "Discord Pellet Distribution"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Mardi 9h": { "main": [[{ "node": "Prospects inactifs", "type": "main", "index": 0 }]] },
+    "Prospects inactifs": { "main": [[{ "node": "Prépare Emails", "type": "main", "index": 0 }]] },
+    "Prépare Emails": { "main": [[{ "node": "Email Relance", "type": "main", "index": 0 }]] },
+    "Email Relance": { "main": [[{ "node": "Résumé", "type": "main", "index": 0 }]] },
+    "Résumé": { "main": [[{ "node": "Discord Résumé", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "pellet-distribution" }],
+  "meta": { "templateId": "pellet-relance-prospect" }
+}

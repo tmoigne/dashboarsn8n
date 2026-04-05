@@ -1,0 +1,115 @@
+{
+  "name": "Pellet — Confirmation Commande Automatique",
+  "nodes": [
+    {
+      "parameters": {
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblxlWQXkD67UKTI4", "mode": "id" },
+        "triggerField": "Created",
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "additionalFields": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000001",
+      "name": "Airtable Trigger",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Pellet CRM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const record = $input.first().json;\n\n// Ne traiter que les nouvelles commandes (statut = 'Nouvelle')\nif (record.fields?.Statut !== 'Nouvelle') {\n  return [];\n}\n\nconst client = record.fields?.Client ?? 'Client';\nconst produits = record.fields?.Produits ?? 'Non précisé';\nconst dateCmd = record.fields?.['Date commande'] ?? new Date().toLocaleDateString('fr-FR');\nconst montant = record.fields?.Montant ? `${record.fields.Montant} €` : 'À confirmer';\nconst email = record.fields?.Email ?? '';\n\nconst sujet = `Confirmation de votre commande — Pellet Distribution`;\nconst message = `Bonjour ${client},\\n\\nNous avons bien reçu votre commande du ${dateCmd}.\\n\\nDétail :\\n${produits}\\nMontant estimé : ${montant}\\n\\nNotre équipe vous contactera dans les 24h pour confirmer la date de livraison.\\n\\nCordialement,\\nL'équipe Pellet Distribution`;\n\nreturn [{ json: { email, sujet, message, client, recordId: record.id } }];"
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000002",
+      "name": "Prépare Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "commandes@pellet-distribution.fr",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.sujet }}",
+        "text": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000003",
+      "name": "Email Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [680, 200],
+      "credentials": {
+        "smtp": {
+          "id": "REMPLACE_PAR_TON_ID_SMTP",
+          "name": "SMTP Pellet Distribution"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=:bell: **Nouvelle commande reçue !**\n**Client :** {{ $('Prépare Email').first().json.client }}\n**ID :** {{ $('Prépare Email').first().json.recordId }}\n*Email de confirmation envoyé automatiquement.*",
+        "options": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000004",
+      "name": "Discord Alerte",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [680, 400],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REMPLACE_PAR_TON_ID_DISCORD",
+          "name": "Discord Pellet Distribution"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblxlWQXkD67UKTI4", "mode": "id" },
+        "id": "={{ $('Prépare Email').first().json.recordId }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Statut": "Confirmée"
+          },
+          "schema": [],
+          "ignoreUnknownFields": true
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-0004-0004-0004-000000000005",
+      "name": "Airtable — Statut Confirmée",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
+          "name": "Airtable Pellet CRM"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Airtable Trigger": { "main": [[{ "node": "Prépare Email", "type": "main", "index": 0 }]] },
+    "Prépare Email": {
+      "main": [[
+        { "node": "Email Confirmation", "type": "main", "index": 0 },
+        { "node": "Discord Alerte", "type": "main", "index": 0 }
+      ]]
+    },
+    "Email Confirmation": { "main": [[{ "node": "Airtable — Statut Confirmée", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "pellet-distribution" }],
+  "meta": { "templateId": "pellet-confirmation-commande" }
+}

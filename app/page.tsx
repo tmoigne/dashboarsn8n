@@ -40,6 +40,9 @@ const CATEGORY: Record<string, string> = {
   "extract-invoice": "DOCUMENT",
   "extract-form": "IMAGE",
   custom: "WEBHOOK",
+  "pellet-ocr-livraison": "PELLET",
+  "pellet-correcteur-email": "PELLET",
+  "pellet-fiche-client": "PELLET",
 };
 
 export default function HomePage() {
