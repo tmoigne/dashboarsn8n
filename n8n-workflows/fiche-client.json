@@ -30,7 +30,7 @@
         "promptType": "define",
         "text": "={{ $json.text }}",
         "options": {
-          "systemMessage": "Tu es un assistant CRM pour une société de distribution de pellets et bois de chauffage.\n\n## PROCESSUS OBLIGATOIRE — respecte cet ordre à chaque fois\n1. Extrais toutes les informations client présentes dans le texte reçu\n2. Appelle TOUJOURS `rechercher_client` en premier pour vérifier si ce client existe déjà (cherche par Nom+Prénom, Email de contact ou Numéro de téléphone/portable)\n3. Analyse la réponse :\n   - Si records.length > 0 → le client EXISTS, note son id Airtable (ex: \"recXXXXX\")\n   - Si records.length === 0 → le client N'EXISTE PAS\n4. Appelle `sauvegarder_client` avec le body Airtable correct :\n   - Client EXISTANT : inclure l'id dans le record pour forcer la mise à jour\n   - Client NOUVEAU : ne pas inclure d'id\n5. Réponds UNIQUEMENT avec ce JSON (sans markdown, sans texte autour) :\n{\"action\": \"created\" ou \"updated\", \"airtable_id\": \"recXXX ou null\", \"client\": {champs extraits}, \"message\": \"phrase résumé\"}\n\n## CHAMPS AIRTABLE (noms exacts à respecter)\nCivilité | Nom | Prénom | Raison sociale | Groupement | Forme juridique | Activité principale\nClient | Famille | Email de contact | Numéro de téléphone | Numéro de portable\nAdresse | Adresse complémentaire | Ville | code postal\nHoraires d'ouverture | Analyse société | Origine contact | Conditions de livraisons\n\n## FORMAT BODY pour sauvegarder_client\nClient nouveau :\n{\"performUpsert\":{\"fieldsToMergeOn\":[\"Email de contact\"]},\"records\":[{\"fields\":{\"Nom\":\"...\",\"Prénom\":\"...\"}}]}\n\nClient existant (mise à jour) :\n{\"records\":[{\"id\":\"recXXXX\",\"fields\":{\"Nom\":\"...\",\"Prénom\":\"...\"}}]}\n\n## RÈGLES\n- Ne jamais créer de doublon\n- Inclure uniquement les champs non vides dans fields\n- Le champ 'Client' est un booléen (true/false)\n- Toujours terminer par le JSON de réponse sans aucun texte supplémentaire"
+          "systemMessage": "Tu es un assistant CRM pour une société de distribution de pellets et bois de chauffage.\n\n## PROCESSUS OBLIGATOIRE — respecte cet ordre\n1. Extrais toutes les infos client du texte reçu\n2. Appelle TOUJOURS `rechercher_client` en premier (cherche par Nom+Prénom, Email de contact ou Numéro de téléphone)\n3. Analyse la réponse :\n   - records non vide → client EXISTS, utilise `sauvegarder_client` pour mettre à jour\n   - records vide → client NOUVEAU, utilise `sauvegarder_client` pour créer\n4. Réponds UNIQUEMENT avec ce JSON :\n{\"action\": \"created\" ou \"updated\", \"airtable_id\": \"recXXX ou null\", \"client\": {champs extraits}, \"message\": \"phrase résumé\"}\n\n## CHAMPS DISPONIBLES (noms exacts)\nCivilité | Nom | Prénom | Raison sociale | Groupement | Forme juridique | Activité principale\nClient | Famille | Email de contact | Numéro de téléphone | Numéro de portable\nAdresse | Adresse complémentaire | Ville | code postal\nHoraires d'ouverture | Analyse société | Origine contact | Conditions de livraisons\n\n## RÈGLES\n- Ne jamais créer de doublon\n- N'inclure que les champs non vides dans sauvegarder_client\n- Terminer par le JSON de réponse sans texte supplémentaire"
         }
       },
       "id": "c3d4e5f6-0003-0003-0003-000000000010",
@@ -60,31 +60,20 @@
     },
     {
       "parameters": {
-        "name": "rechercher_client",
-        "description": "Cherche si un client existe déjà dans la base Airtable CRM. Appelle TOUJOURS cet outil en premier, avant toute sauvegarde. Retourne la liste des records trouvés avec leurs champs et IDs Airtable. Si records est vide, le client n'existe pas.",
-        "method": "GET",
-        "url": "https://api.airtable.com/v0/appB7GjlNkBXiZjB2/tblHe0EZznaMuFqtF",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "airtableTokenApi",
-        "sendQuery": true,
-        "parametersQuery": {
-          "values": [
-            {
-              "name": "filterByFormula",
-              "value": "={{ $fromAI('formule', 'Formule Airtable pour filtrer. Ex: OR(FIND(LOWER(\\'dupont\\'), LOWER({Nom})), {Email de contact}=\\'test@test.com\\')', 'string') }}"
-            },
-            {
-              "name": "maxRecords",
-              "value": "3"
-            }
-          ]
-        },
-        "options": {}
+        "descriptionType": "manual",
+        "toolDescription": "Cherche si un client existe déjà dans Airtable CRM. Appelle TOUJOURS cet outil en premier avant toute sauvegarde. Retourne les records trouvés avec leurs IDs et champs.",
+        "operation": "list",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblHe0EZznaMuFqtF", "mode": "id" },
+        "options": {
+          "filterByFormula": "={{ $fromAI('formule', 'Formule Airtable pour filtrer. Ex: OR(FIND(LOWER(\\'dupont\\'),LOWER({Nom})),{Email de contact}=\\'test@test.com\\')', 'string') }}",
+          "maxRecords": 3
+        }
       },
       "id": "c3d4e5f6-0003-0003-0003-000000000012",
       "name": "Outil — Rechercher Client",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
       "position": [680, 540],
       "credentials": {
         "airtableTokenApi": {
@@ -95,21 +84,44 @@
     },
     {
       "parameters": {
-        "name": "sauvegarder_client",
-        "description": "Crée ou met à jour une fiche client dans Airtable. Utilise uniquement APRÈS avoir appelé rechercher_client. Pour un client existant: inclure son id dans le record. Pour un client nouveau: utiliser performUpsert sans id. Le paramètre 'body' doit être le JSON Airtable complet.",
-        "method": "PATCH",
-        "url": "https://api.airtable.com/v0/appB7GjlNkBXiZjB2/tblHe0EZznaMuFqtF",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "airtableTokenApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $fromAI('body', 'JSON Airtable valide: {performUpsert:{fieldsToMergeOn:[...]},records:[{fields:{...}}]} pour création, ou {records:[{id:\"recXXX\",fields:{...}}]} pour mise à jour', 'json') }}",
+        "descriptionType": "manual",
+        "toolDescription": "Crée ou met à jour une fiche client dans Airtable. Utiliser APRÈS avoir appelé rechercher_client. La déduplication se fait automatiquement sur l'Email de contact.",
+        "operation": "upsert",
+        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
+        "table": { "__rl": true, "value": "tblHe0EZznaMuFqtF", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Civilité": "={{ $fromAI('civilite', 'Civilité: M. ou Mme', 'string') }}",
+            "Nom": "={{ $fromAI('nom', 'Nom de famille', 'string') }}",
+            "Prénom": "={{ $fromAI('prenom', 'Prénom', 'string') }}",
+            "Raison sociale": "={{ $fromAI('raison_sociale', 'Nom de l entreprise si professionnel', 'string') }}",
+            "Email de contact": "={{ $fromAI('email', 'Adresse email', 'string') }}",
+            "Numéro de téléphone": "={{ $fromAI('telephone', 'Numéro de téléphone fixe', 'string') }}",
+            "Numéro de portable": "={{ $fromAI('portable', 'Numéro de mobile', 'string') }}",
+            "Adresse": "={{ $fromAI('adresse', 'Adresse postale', 'string') }}",
+            "Adresse complémentaire": "={{ $fromAI('adresse2', 'Complément d adresse', 'string') }}",
+            "Ville": "={{ $fromAI('ville', 'Ville', 'string') }}",
+            "code postal": "={{ $fromAI('code_postal', 'Code postal', 'string') }}",
+            "Activité principale": "={{ $fromAI('activite', 'Secteur d activité', 'string') }}",
+            "Forme juridique": "={{ $fromAI('forme_juridique', 'Ex: SARL, SAS, EI', 'string') }}",
+            "Groupement": "={{ $fromAI('groupement', 'Groupement ou réseau', 'string') }}",
+            "Famille": "={{ $fromAI('famille', 'Famille client', 'string') }}",
+            "Origine contact": "={{ $fromAI('origine', 'Comment le client a été contacté', 'string') }}",
+            "Horaires d'ouverture": "={{ $fromAI('horaires', 'Horaires d ouverture', 'string') }}",
+            "Conditions de livraisons": "={{ $fromAI('conditions_livraison', 'Conditions de livraison spécifiques', 'string') }}",
+            "Analyse société": "={{ $fromAI('analyse', 'Notes ou analyse sur la société', 'string') }}"
+          },
+          "schema": [],
+          "ignoreUnknownFields": true
+        },
+        "fieldsToMatchOn": { "fieldNames": ["Email de contact"] },
         "options": {}
       },
       "id": "c3d4e5f6-0003-0003-0003-000000000013",
       "name": "Outil — Sauvegarder Client",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
       "position": [900, 540],
       "credentials": {
         "airtableTokenApi": {
