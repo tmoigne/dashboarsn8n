@@ -28,6 +28,64 @@ function cleanText(raw: string): string {
     .trim();
 }
 
+function formatFicheClient(data: Record<string, unknown>): string {
+  if (data.found === false) {
+    return `⚠  AUCUN CLIENT TROUVÉ\n${"─".repeat(38)}\n\n${data.message ?? ""}`;
+  }
+
+  const client = (data.client ?? {}) as Record<string, unknown>;
+  const lines: string[] = [];
+
+  const action = data.action === "created" ? "✦  FICHE CRÉÉE" : "✓  FICHE CLIENT TROUVÉE";
+  lines.push(action, "─".repeat(38));
+
+  const row = (label: string, value: unknown) => {
+    const v = value !== undefined && value !== null && value !== "" ? String(value) : null;
+    if (v) lines.push(`${label.padEnd(20)}: ${v}`);
+  };
+
+  // Identité
+  const nomComplet = [client["Nom"], client["Prénom"]].filter(Boolean).join(" ");
+  if (nomComplet) row("Nom / Prénom", nomComplet);
+  row("Raison sociale", client["Raison sociale"]);
+  row("Civilité", client["Civilité"]);
+  row("Famille", client["Famille"]);
+  row("Activité", client["Activité principale"]);
+  row("Code contact", client["code contact"] ?? client["Code contact"]);
+
+  lines.push("");
+
+  // Contact
+  row("Email", client["Email de contact"]);
+  row("Téléphone", client["Numéro de téléphone"]);
+  row("Portable", client["Numéro de portable"]);
+
+  lines.push("");
+
+  // Adresse
+  const adresse = [client["Adresse"], client["Adresse complémentaire"]].filter(Boolean).join(", ");
+  const cp = [client["code postal"], client["Ville"]].filter(Boolean).join(" ");
+  if (adresse) row("Adresse", adresse);
+  if (cp) row("Ville", cp);
+
+  lines.push("");
+
+  // Commandes
+  const nbCmd = client["Nombre de commandes"];
+  const valCmd = client["Valeur totale des commandes"];
+  const derCmd = client["Date de dernière commande"];
+  if (nbCmd !== undefined) row("Commandes", `${nbCmd}`);
+  if (valCmd !== undefined) row("Valeur totale", `${valCmd} €`);
+  if (derCmd) row("Dernière commande", String(derCmd));
+  row("Créé le", client["Date de création"]);
+
+  // Conditions / Notes
+  row("Conditions livraison", client["Conditions de livraisons"]);
+  row("Horaires", client["Horaires d'ouverture"]);
+
+  return lines.join("\n");
+}
+
 function formatResult(data: unknown): string {
   if (typeof data === "string") return cleanText(data);
 
@@ -43,6 +101,8 @@ function formatResult(data: unknown): string {
 
   if (data && typeof data === "object") {
     const obj = data as Record<string, unknown>;
+    // Fiche client response
+    if ("found" in obj) return formatFicheClient(obj);
     if (typeof obj.text === "string") return cleanText(obj.text);
     if (typeof obj.ParsedText === "string") return cleanText(obj.ParsedText);
   }
