@@ -3,13 +3,37 @@
   "nodes": [
     {
       "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "Tu es un assistant CRM pour une société de distribution de pellets.\n\nQuand tu reçois une requête, tu dois :\n\n1. Utilise 'Search records in Airtable' pour chercher le client.\n   Construis la formule selon le critère reçu :\n   - Nom/Prénom : OR(SEARCH(LOWER(\"terme\"),LOWER({Nom})),SEARCH(LOWER(\"terme\"),LOWER({Prénom})))\n   - Téléphone : OR(SEARCH(\"terme\",{Numéro de téléphone}),SEARCH(\"terme\",{Numéro de portable}))\n   - Email : {Email de contact}=\"terme\"\n   - Recherche générale : OR(SEARCH(LOWER(\"terme\"),LOWER({Nom})),SEARCH(LOWER(\"terme\"),LOWER({Prénom})),SEARCH(\"terme\",{Numéro de portable}),SEARCH(\"terme\",{Numéro de téléphone}),SEARCH(LOWER(\"terme\"),LOWER({Email de contact})))\n\n2. Si le client EST TROUVÉ :\n   Retourne ses informations complètes au format JSON :\n   { \"found\": true, \"action\": \"found\", \"client\": { tous les champs non vides du record }, \"message\": \"Fiche client trouvée\" }\n\n3. Si le client N'EST PAS TROUVÉ :\n   Retourne : { \"found\": false, \"action\": \"not_found\", \"message\": \"Aucun client trouvé pour \\\"[terme recherché]\\\". Souhaitez-vous créer une nouvelle fiche ?\" }\n   N'appelle PAS 'Create or update a record in Airtable' automatiquement — attends la confirmation.\n\n4. Si la requête contient explicitement une demande de création (ex: 'créer', 'nouveau client', 'ajouter') avec des données :\n   Utilise 'Create or update a record in Airtable' avec les champs extraits du texte.\n   Retourne : { \"found\": false, \"action\": \"created\", \"airtable_id\": \"recXXX\", \"client\": { champs }, \"message\": \"Fiche créée avec succès\" }\n\nRègle : réponds UNIQUEMENT en JSON valide, sans texte autour."
+        }
+      },
+      "id": "6028e19f-2606-44b0-8147-8e6d00277ddb",
+      "name": "AI Agent — Fiche Client",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [80, -416]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output ?? $input.first().json;\nlet result = {};\ntry {\n  const str = typeof raw === 'string' ? raw : JSON.stringify(raw);\n  const match = str.match(/\\{[\\s\\S]*\\}/);\n  result = JSON.parse(match?.[0] ?? '{}');\n} catch(e) {\n  result = { message: String(raw) };\n}\nresult.success = true;\nreturn [{ json: result }];"
+      },
+      "id": "fbd6b651-c9c4-4674-9f71-6ebfa9a4c647",
+      "name": "Parse Résultat Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, -416]
+    },
+    {
+      "parameters": {
         "httpMethod": "POST",
         "path": "pellet-fiche-client",
         "responseMode": "responseNode",
         "options": {}
       },
       "id": "6e2e2123-bece-4aee-8e28-fa89e25befca",
-      "name": "Webhook",
+      "name": "Webhook1",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [-368, -416],
@@ -17,13 +41,25 @@
     },
     {
       "parameters": {
-        "jsCode": "// Accepte body JSON direct ou imbriqué\nconst body = $input.first().json.body ?? $input.first().json;\n\n// Champs attendus\nconst champs = [\n  'Civilité', 'Nom', 'Prénom', 'Raison sociale', 'Groupement',\n  'Forme juridique', 'Activité principale', 'Famille',\n  'Email de contact', 'Numéro de téléphone', 'Numéro de portable',\n  'Adresse', 'Adresse complémentaire', 'Ville', 'code postal',\n  \"Horaires d'ouverture\", 'Analyse société', 'Origine contact',\n  'Conditions de livraisons'\n];\n\n// Extrait uniquement les champs non vides\nconst data = {};\nfor (const c of champs) {\n  if (body[c] !== undefined && body[c] !== null && body[c] !== '') {\n    data[c] = body[c];\n  }\n}\n\n// Construit la formule de recherche (FALSE() si aucun critère = pas de recherche)\nconst parts = [];\nif (data['Email de contact']) parts.push(`{Email de contact}=\"${data['Email de contact']}\"`);\nif (data['Numéro de portable']) parts.push(`{Numéro de portable}=\"${data['Numéro de portable']}\"`);\nif (data['Numéro de téléphone']) parts.push(`{Numéro de téléphone}=\"${data['Numéro de téléphone']}\"`);\nif (data.Nom && data.Prénom) parts.push(`AND({Nom}=\"${data.Nom}\",{Prénom}=\"${data.Prénom}\")`);\nelse if (data.Nom) parts.push(`{Nom}=\"${data.Nom}\"`);\n\ndata._searchFormula = parts.length > 0 ? `OR(${parts.join(',')})` : 'FALSE()';\n\nreturn [{ json: data }];"
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst text = body.text ?? '';\nif (!text.trim()) throw new Error('Données vides');\nreturn [{ json: { text } }];"
       },
       "id": "63946424-92b3-4fb8-875a-d0630785e581",
-      "name": "Valide + Formule",
+      "name": "Valide1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [-144, -416]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "31c800b0-df22-443b-a3de-853353be6596",
+      "name": "Réponse1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [656, -416]
     },
     {
       "parameters": {
@@ -42,16 +78,13 @@
           "cachedResultName": "Contacts",
           "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2/tblHe0EZznaMuFqtF"
         },
-        "filterByFormula": "={{ $json._searchFormula }}",
-        "options": {
-          "maxRecords": 1
-        }
+        "options": {}
       },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [144, -112],
       "id": "7a3534e2-98d6-4344-94a3-06f1eecfc00c",
-      "name": "Airtable — Rechercher",
-      "type": "n8n-nodes-base.airtable",
-      "typeVersion": 2,
-      "position": [80, -416],
+      "name": "Search records in Airtable",
       "credentials": {
         "airtableTokenApi": {
           "id": "IkiW3kNGODfylx4P",
@@ -78,38 +111,55 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {
-            "Civilité": "={{ $('Valide + Formule').first().json['Civilité'] }}",
-            "Nom": "={{ $('Valide + Formule').first().json['Nom'] }}",
-            "Prénom": "={{ $('Valide + Formule').first().json['Prénom'] }}",
-            "Raison sociale": "={{ $('Valide + Formule').first().json['Raison sociale'] }}",
-            "Groupement": "={{ $('Valide + Formule').first().json['Groupement'] }}",
-            "Forme juridique": "={{ $('Valide + Formule').first().json['Forme juridique'] }}",
-            "Activité principale": "={{ $('Valide + Formule').first().json['Activité principale'] }}",
-            "Famille": "={{ $('Valide + Formule').first().json['Famille'] }}",
-            "Email de contact": "={{ $('Valide + Formule').first().json['Email de contact'] }}",
-            "Numéro de téléphone": "={{ $('Valide + Formule').first().json['Numéro de téléphone'] }}",
-            "Numéro de portable": "={{ $('Valide + Formule').first().json['Numéro de portable'] }}",
-            "Adresse": "={{ $('Valide + Formule').first().json['Adresse'] }}",
-            "Adresse complémentaire": "={{ $('Valide + Formule').first().json['Adresse complémentaire'] }}",
-            "Ville": "={{ $('Valide + Formule').first().json['Ville'] }}",
-            "code postal": "={{ $('Valide + Formule').first().json['code postal'] }}",
-            "Horaires d'ouverture": "={{ $('Valide + Formule').first().json[\"Horaires d'ouverture\"] }}",
-            "Analyse société": "={{ $('Valide + Formule').first().json['Analyse société'] }}",
-            "Origine contact": "={{ $('Valide + Formule').first().json['Origine contact'] }}",
-            "Conditions de livraisons": "={{ $('Valide + Formule').first().json['Conditions de livraisons'] }}"
-          },
-          "matchingColumns": ["Email de contact"],
-          "schema": [],
-          "ignoreUnknownFields": true
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true, "removed": false },
+            { "id": "code contact", "displayName": "code contact", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Code Contact2", "displayName": "Code Contact2", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "array", "readOnly": false, "removed": false },
+            { "id": "prospect", "displayName": "prospect", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "boolean", "readOnly": false, "removed": false },
+            { "id": "Civilité", "displayName": "Civilité", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "Monsieur", "value": "Monsieur" }, { "name": "Madame", "value": "Madame" }, { "name": "Civilité", "value": "Civilité" }], "readOnly": false, "removed": false },
+            { "id": "Nom", "displayName": "Nom", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Prénom", "displayName": "Prénom", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Raison sociale", "displayName": "Raison sociale", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Groupement", "displayName": "Groupement", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Forme juridique", "displayName": "Forme juridique", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "SARL", "value": "SARL" }, { "name": "EI", "value": "EI" }, { "name": "SA", "value": "SA" }, { "name": "SAS", "value": "SAS" }, { "name": "SASU", "value": "SASU" }, { "name": "Forme juridique", "value": "Forme juridique" }], "readOnly": false, "removed": false },
+            { "id": "Activité principale", "displayName": "Activité principale", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Client", "displayName": "Client", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "boolean", "readOnly": false, "removed": false },
+            { "id": "Famille", "displayName": "Famille", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "Particulier", "value": "Particulier" }, { "name": "Pro", "value": "Pro" }, { "name": "Revendeur", "value": "Revendeur" }, { "name": "Restaurant", "value": "Restaurant" }, { "name": "Famille", "value": "Famille" }, { "name": "Particuliers", "value": "Particuliers" }], "readOnly": false, "removed": false },
+            { "id": "Date de dernière commande", "displayName": "Date de dernière commande", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": true, "removed": false },
+            { "id": "Nombre de commandes", "displayName": "Nombre de commandes", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": true, "removed": false },
+            { "id": "Valeur totale des commandes", "displayName": "Valeur totale des commandes", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": true, "removed": false },
+            { "id": "Commandes associées", "displayName": "Commandes associées", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "array", "readOnly": false, "removed": false },
+            { "id": "Email de contact", "displayName": "Email de contact", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Numéro de téléphone", "displayName": "Numéro de téléphone", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Numéro de portable", "displayName": "Numéro de portable", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Adresse", "displayName": "Adresse", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Adresse complémentaire", "displayName": "Adresse complémentaire", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Ville", "displayName": "Ville", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "code postal", "displayName": "code postal", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Horaires d'ouverture", "displayName": "Horaires d'ouverture", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Analyse société", "displayName": "Analyse société", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Origine contact", "displayName": "Origine contact", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Livraisons", "displayName": "Livraisons", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "array", "readOnly": false, "removed": false },
+            { "id": "Date de création", "displayName": "Date de création", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": true, "removed": false },
+            { "id": "Code Client (from Code Client )", "displayName": "Code Client (from Code Client )", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": true, "removed": false },
+            { "id": "Commandes Clients", "displayName": "Commandes Clients", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Copie de Livraisons", "displayName": "Copie de Livraisons", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Copie de Livraisons 2", "displayName": "Copie de Livraisons 2", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Livraisons 2", "displayName": "Livraisons 2", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false },
+            { "id": "Conditions de livraisons", "displayName": "Conditions de livraisons", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false, "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [320, -112],
       "id": "17a90a01-3637-4b19-bb13-8ff8e87c2e4a",
-      "name": "Airtable — Sauvegarder",
-      "type": "n8n-nodes-base.airtable",
-      "typeVersion": 2,
-      "position": [300, -416],
+      "name": "Create or update a record in Airtable",
       "credentials": {
         "airtableTokenApi": {
           "id": "IkiW3kNGODfylx4P",
@@ -119,40 +169,58 @@
     },
     {
       "parameters": {
-        "jsCode": "const recherche = $('Airtable — Rechercher').all();\nconst existait = recherche.length > 0 && recherche[0].json.id;\nconst upsert = $input.first().json;\nconst client = $('Valide + Formule').first().json;\n\nreturn [{ json: {\n  success: true,\n  action: existait ? 'updated' : 'created',\n  airtable_id: upsert.id,\n  client: {\n    Nom: client.Nom,\n    Prénom: client.Prénom,\n    'Email de contact': client['Email de contact'],\n    Ville: client.Ville\n  }\n} }];"
-      },
-      "id": "fbd6b651-c9c4-4674-9f71-6ebfa9a4c647",
-      "name": "Prépare Réponse",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [520, -416]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
         "options": {}
       },
-      "id": "31c800b0-df22-443b-a3de-853353be6596",
-      "name": "Réponse",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
-      "position": [740, -416]
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [-64, -208],
+      "id": "36795e8c-f31d-44d4-a1d4-d714705231c0",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YCx9OWhyjtonSUJ1",
+          "name": "OpenAi account"
+        }
+      }
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": { "main": [[{ "node": "Valide + Formule", "type": "main", "index": 0 }]] },
-    "Valide + Formule": { "main": [[{ "node": "Airtable — Rechercher", "type": "main", "index": 0 }]] },
-    "Airtable — Rechercher": { "main": [[{ "node": "Airtable — Sauvegarder", "type": "main", "index": 0 }]] },
-    "Airtable — Sauvegarder": { "main": [[{ "node": "Prépare Réponse", "type": "main", "index": 0 }]] },
-    "Prépare Réponse": { "main": [[{ "node": "Réponse", "type": "main", "index": 0 }]] }
+    "AI Agent — Fiche Client": {
+      "main": [[{ "node": "Parse Résultat Agent", "type": "main", "index": 0 }]]
+    },
+    "Parse Résultat Agent": {
+      "main": [[{ "node": "Réponse1", "type": "main", "index": 0 }]]
+    },
+    "Webhook1": {
+      "main": [[{ "node": "Valide1", "type": "main", "index": 0 }]]
+    },
+    "Valide1": {
+      "main": [[{ "node": "AI Agent — Fiche Client", "type": "main", "index": 0 }]]
+    },
+    "Search records in Airtable": {
+      "ai_tool": [[{ "node": "AI Agent — Fiche Client", "type": "ai_tool", "index": 0 }]]
+    },
+    "Create or update a record in Airtable": {
+      "ai_tool": [[{ "node": "AI Agent — Fiche Client", "type": "ai_tool", "index": 0 }]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[{ "node": "AI Agent — Fiche Client", "type": "ai_languageModel", "index": 0 }]]
+    }
   },
-  "active": false,
+  "active": true,
   "settings": { "executionOrder": "v1" },
+  "versionId": "e0641002-f62a-4be0-8618-8b4b258a588e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "db7226f0e75c8049ad6d45ec7c04da9b90d79c8b25d32272a66ca65ff3aac5c6"
   },
+  "id": "ePVdGt45dhlUv01O",
   "tags": []
 }
