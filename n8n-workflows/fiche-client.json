@@ -17,53 +17,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst text = body.text ?? '';\nif (!text.trim()) throw new Error('Données vides');\nreturn [{ json: { text } }];"
+        "jsCode": "// Accepte body JSON direct ou imbriqué\nconst body = $input.first().json.body ?? $input.first().json;\n\n// Champs attendus\nconst champs = [\n  'Civilité', 'Nom', 'Prénom', 'Raison sociale', 'Groupement',\n  'Forme juridique', 'Activité principale', 'Famille',\n  'Email de contact', 'Numéro de téléphone', 'Numéro de portable',\n  'Adresse', 'Adresse complémentaire', 'Ville', 'code postal',\n  \"Horaires d'ouverture\", 'Analyse société', 'Origine contact',\n  'Conditions de livraisons'\n];\n\n// Extrait uniquement les champs non vides\nconst data = {};\nfor (const c of champs) {\n  if (body[c] !== undefined && body[c] !== null && body[c] !== '') {\n    data[c] = body[c];\n  }\n}\n\nif (!data.Nom && !data['Email de contact'] && !data['Numéro de portable']) {\n  throw new Error('Au moins Nom, Email ou Téléphone requis');\n}\n\n// Construit la formule de recherche\nconst parts = [];\nif (data['Email de contact']) parts.push(`{Email de contact}=\"${data['Email de contact']}\"`);\nif (data['Numéro de portable']) parts.push(`{Numéro de portable}=\"${data['Numéro de portable']}\"`);\nif (data['Numéro de téléphone']) parts.push(`{Numéro de téléphone}=\"${data['Numéro de téléphone']}\"`);\nif (data.Nom && data.Prénom) parts.push(`AND({Nom}=\"${data.Nom}\",{Prénom}=\"${data.Prénom}\")`);\n\ndata._searchFormula = parts.length > 0 ? `OR(${parts.join(',')})` : 'FALSE()';\n\nreturn [{ json: data }];"
       },
       "id": "63946424-92b3-4fb8-875a-d0630785e581",
-      "name": "Valide",
+      "name": "Valide + Formule",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [-144, -416]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.anthropic.com/v1/messages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "x-api-key", "value": "={{ $credentials.value }}" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 1024,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Extrais les informations client depuis ce texte et réponds UNIQUEMENT en JSON valide avec exactement ces champs (valeur null si absent) :\\n{\\n  \\\"Civilité\\\": null,\\n  \\\"Nom\\\": null,\\n  \\\"Prénom\\\": null,\\n  \\\"Raison sociale\\\": null,\\n  \\\"Groupement\\\": null,\\n  \\\"Forme juridique\\\": null,\\n  \\\"Activité principale\\\": null,\\n  \\\"Famille\\\": null,\\n  \\\"Email de contact\\\": null,\\n  \\\"Numéro de téléphone\\\": null,\\n  \\\"Numéro de portable\\\": null,\\n  \\\"Adresse\\\": null,\\n  \\\"Adresse complémentaire\\\": null,\\n  \\\"Ville\\\": null,\\n  \\\"code postal\\\": null,\\n  \\\"Horaires d'ouverture\\\": null,\\n  \\\"Analyse société\\\": null,\\n  \\\"Origine contact\\\": null,\\n  \\\"Conditions de livraisons\\\": null\\n}\\n\\nTexte :\\n{{ $json.text }}\"\n  }]\n}",
-        "options": {}
-      },
-      "id": "c3d4e5f6-0003-0003-0003-000000000003",
-      "name": "Claude — Extraire",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [80, -416],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "REMPLACE_PAR_TON_ID_CLAUDE",
-          "name": "Claude API Key"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst text = response.content?.[0]?.text ?? '{}';\nlet parsed = {};\ntry {\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(jsonMatch?.[0] ?? '{}');\n} catch(e) {\n  parsed = {};\n}\n\n// Supprime les champs null\nObject.keys(parsed).forEach(k => { if (parsed[k] === null || parsed[k] === '') delete parsed[k]; });\n\n// Construit la formule de recherche Airtable\nconst parts = [];\nif (parsed['Email de contact']) parts.push(`{Email de contact}=\"${parsed['Email de contact']}\"`);\nif (parsed['Numéro de portable']) parts.push(`{Numéro de portable}=\"${parsed['Numéro de portable']}\"`);\nif (parsed['Numéro de téléphone']) parts.push(`{Numéro de téléphone}=\"${parsed['Numéro de téléphone']}\"`);\nif (parsed.Nom && parsed.Prénom) parts.push(`AND({Nom}=\"${parsed.Nom}\",{Prénom}=\"${parsed.Prénom}\")`);\n\nparsed._searchFormula = parts.length > 0 ? `OR(${parts.join(',')})` : 'FALSE()';\n\nreturn [{ json: parsed }];"
-      },
-      "id": "c3d4e5f6-0003-0003-0003-000000000004",
-      "name": "Parse + Formule",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [300, -416]
     },
     {
       "parameters": {
@@ -91,7 +51,7 @@
       "name": "Airtable — Rechercher",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2,
-      "position": [520, -416],
+      "position": [80, -416],
       "credentials": {
         "airtableTokenApi": {
           "id": "IkiW3kNGODfylx4P",
@@ -119,25 +79,25 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Civilité": "={{ $('Parse + Formule').first().json['Civilité'] }}",
-            "Nom": "={{ $('Parse + Formule').first().json['Nom'] }}",
-            "Prénom": "={{ $('Parse + Formule').first().json['Prénom'] }}",
-            "Raison sociale": "={{ $('Parse + Formule').first().json['Raison sociale'] }}",
-            "Groupement": "={{ $('Parse + Formule').first().json['Groupement'] }}",
-            "Forme juridique": "={{ $('Parse + Formule').first().json['Forme juridique'] }}",
-            "Activité principale": "={{ $('Parse + Formule').first().json['Activité principale'] }}",
-            "Famille": "={{ $('Parse + Formule').first().json['Famille'] }}",
-            "Email de contact": "={{ $('Parse + Formule').first().json['Email de contact'] }}",
-            "Numéro de téléphone": "={{ $('Parse + Formule').first().json['Numéro de téléphone'] }}",
-            "Numéro de portable": "={{ $('Parse + Formule').first().json['Numéro de portable'] }}",
-            "Adresse": "={{ $('Parse + Formule').first().json['Adresse'] }}",
-            "Adresse complémentaire": "={{ $('Parse + Formule').first().json['Adresse complémentaire'] }}",
-            "Ville": "={{ $('Parse + Formule').first().json['Ville'] }}",
-            "code postal": "={{ $('Parse + Formule').first().json['code postal'] }}",
-            "Horaires d'ouverture": "={{ $('Parse + Formule').first().json[\"Horaires d'ouverture\"] }}",
-            "Analyse société": "={{ $('Parse + Formule').first().json['Analyse société'] }}",
-            "Origine contact": "={{ $('Parse + Formule').first().json['Origine contact'] }}",
-            "Conditions de livraisons": "={{ $('Parse + Formule').first().json['Conditions de livraisons'] }}"
+            "Civilité": "={{ $('Valide + Formule').first().json['Civilité'] }}",
+            "Nom": "={{ $('Valide + Formule').first().json['Nom'] }}",
+            "Prénom": "={{ $('Valide + Formule').first().json['Prénom'] }}",
+            "Raison sociale": "={{ $('Valide + Formule').first().json['Raison sociale'] }}",
+            "Groupement": "={{ $('Valide + Formule').first().json['Groupement'] }}",
+            "Forme juridique": "={{ $('Valide + Formule').first().json['Forme juridique'] }}",
+            "Activité principale": "={{ $('Valide + Formule').first().json['Activité principale'] }}",
+            "Famille": "={{ $('Valide + Formule').first().json['Famille'] }}",
+            "Email de contact": "={{ $('Valide + Formule').first().json['Email de contact'] }}",
+            "Numéro de téléphone": "={{ $('Valide + Formule').first().json['Numéro de téléphone'] }}",
+            "Numéro de portable": "={{ $('Valide + Formule').first().json['Numéro de portable'] }}",
+            "Adresse": "={{ $('Valide + Formule').first().json['Adresse'] }}",
+            "Adresse complémentaire": "={{ $('Valide + Formule').first().json['Adresse complémentaire'] }}",
+            "Ville": "={{ $('Valide + Formule').first().json['Ville'] }}",
+            "code postal": "={{ $('Valide + Formule').first().json['code postal'] }}",
+            "Horaires d'ouverture": "={{ $('Valide + Formule').first().json[\"Horaires d'ouverture\"] }}",
+            "Analyse société": "={{ $('Valide + Formule').first().json['Analyse société'] }}",
+            "Origine contact": "={{ $('Valide + Formule').first().json['Origine contact'] }}",
+            "Conditions de livraisons": "={{ $('Valide + Formule').first().json['Conditions de livraisons'] }}"
           },
           "matchingColumns": ["Email de contact"],
           "schema": [],
@@ -149,7 +109,7 @@
       "name": "Airtable — Sauvegarder",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2,
-      "position": [740, -416],
+      "position": [300, -416],
       "credentials": {
         "airtableTokenApi": {
           "id": "IkiW3kNGODfylx4P",
@@ -159,13 +119,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const recherche = $('Airtable — Rechercher').all();\nconst existait = recherche.length > 0 && recherche[0].json.id;\nconst upsert = $input.first().json;\nconst client = $('Parse + Formule').first().json;\n\nreturn [{ json: {\n  success: true,\n  action: existait ? 'updated' : 'created',\n  airtable_id: upsert.id,\n  client: {\n    Nom: client.Nom,\n    Prénom: client.Prénom,\n    'Email de contact': client['Email de contact'],\n    Ville: client.Ville\n  }\n} }];"
+        "jsCode": "const recherche = $('Airtable — Rechercher').all();\nconst existait = recherche.length > 0 && recherche[0].json.id;\nconst upsert = $input.first().json;\nconst client = $('Valide + Formule').first().json;\n\nreturn [{ json: {\n  success: true,\n  action: existait ? 'updated' : 'created',\n  airtable_id: upsert.id,\n  client: {\n    Nom: client.Nom,\n    Prénom: client.Prénom,\n    'Email de contact': client['Email de contact'],\n    Ville: client.Ville\n  }\n} }];"
       },
       "id": "fbd6b651-c9c4-4674-9f71-6ebfa9a4c647",
       "name": "Prépare Réponse",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, -416]
+      "position": [520, -416]
     },
     {
       "parameters": {
@@ -177,15 +137,13 @@
       "name": "Réponse",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1180, -416]
+      "position": [740, -416]
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": { "main": [[{ "node": "Valide", "type": "main", "index": 0 }]] },
-    "Valide": { "main": [[{ "node": "Claude — Extraire", "type": "main", "index": 0 }]] },
-    "Claude — Extraire": { "main": [[{ "node": "Parse + Formule", "type": "main", "index": 0 }]] },
-    "Parse + Formule": { "main": [[{ "node": "Airtable — Rechercher", "type": "main", "index": 0 }]] },
+    "Webhook": { "main": [[{ "node": "Valide + Formule", "type": "main", "index": 0 }]] },
+    "Valide + Formule": { "main": [[{ "node": "Airtable — Rechercher", "type": "main", "index": 0 }]] },
     "Airtable — Rechercher": { "main": [[{ "node": "Airtable — Sauvegarder", "type": "main", "index": 0 }]] },
     "Airtable — Sauvegarder": { "main": [[{ "node": "Prépare Réponse", "type": "main", "index": 0 }]] },
     "Prépare Réponse": { "main": [[{ "node": "Réponse", "type": "main", "index": 0 }]] }
