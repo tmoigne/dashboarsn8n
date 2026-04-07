@@ -8,22 +8,22 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "c3d4e5f6-0003-0003-0003-000000000001",
+      "id": "6e2e2123-bece-4aee-8e28-fa89e25befca",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [-368, -416],
       "webhookId": "pellet-fiche-client"
     },
     {
       "parameters": {
         "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst text = body.text ?? '';\nif (!text.trim()) throw new Error('Données vides');\nreturn [{ json: { text } }];"
       },
-      "id": "c3d4e5f6-0003-0003-0003-000000000002",
+      "id": "63946424-92b3-4fb8-875a-d0630785e581",
       "name": "Valide",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [-144, -416]
     },
     {
       "parameters": {
@@ -40,14 +40,14 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 1024,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Extrais les informations client depuis ce texte et réponds UNIQUEMENT en JSON valide avec exactement ces champs (valeur null si absent) :\\n{\\n  \\\"Civilité\\\": null,\\n  \\\"Nom\\\": null,\\n  \\\"Prénom\\\": null,\\n  \\\"Raison sociale\\\": null,\\n  \\\"Groupement\\\": null,\\n  \\\"Forme juridique\\\": null,\\n  \\\"Activité principale\\\": null,\\n  \\\"Email de contact\\\": null,\\n  \\\"Numéro de téléphone\\\": null,\\n  \\\"Numéro de portable\\\": null,\\n  \\\"Adresse\\\": null,\\n  \\\"Adresse complémentaire\\\": null,\\n  \\\"Ville\\\": null,\\n  \\\"code postal\\\": null,\\n  \\\"Horaires d'ouverture\\\": null,\\n  \\\"Analyse société\\\": null,\\n  \\\"Origine contact\\\": null,\\n  \\\"Conditions de livraisons\\\": null\\n}\\n\\nTexte :\\n{{ $json.text }}\"\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 1024,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Extrais les informations client depuis ce texte et réponds UNIQUEMENT en JSON valide avec exactement ces champs (valeur null si absent) :\\n{\\n  \\\"Civilité\\\": null,\\n  \\\"Nom\\\": null,\\n  \\\"Prénom\\\": null,\\n  \\\"Raison sociale\\\": null,\\n  \\\"Groupement\\\": null,\\n  \\\"Forme juridique\\\": null,\\n  \\\"Activité principale\\\": null,\\n  \\\"Famille\\\": null,\\n  \\\"Email de contact\\\": null,\\n  \\\"Numéro de téléphone\\\": null,\\n  \\\"Numéro de portable\\\": null,\\n  \\\"Adresse\\\": null,\\n  \\\"Adresse complémentaire\\\": null,\\n  \\\"Ville\\\": null,\\n  \\\"code postal\\\": null,\\n  \\\"Horaires d'ouverture\\\": null,\\n  \\\"Analyse société\\\": null,\\n  \\\"Origine contact\\\": null,\\n  \\\"Conditions de livraisons\\\": null\\n}\\n\\nTexte :\\n{{ $json.text }}\"\n  }]\n}",
         "options": {}
       },
       "id": "c3d4e5f6-0003-0003-0003-000000000003",
       "name": "Claude — Extraire",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300],
+      "position": [80, -416],
       "credentials": {
         "httpHeaderAuth": {
           "id": "REMPLACE_PAR_TON_ID_CLAUDE",
@@ -63,35 +63,59 @@
       "name": "Parse + Formule",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [300, -416]
     },
     {
       "parameters": {
-        "operation": "list",
-        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
-        "table": { "__rl": true, "value": "tblHe0EZznaMuFqtF", "mode": "id" },
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appB7GjlNkBXiZjB2",
+          "mode": "list",
+          "cachedResultName": "Pellet CRM",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHe0EZznaMuFqtF",
+          "mode": "list",
+          "cachedResultName": "Contacts",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2/tblHe0EZznaMuFqtF"
+        },
+        "filterByFormula": "={{ $json._searchFormula }}",
         "options": {
-          "filterByFormula": "={{ $json._searchFormula }}",
           "maxRecords": 1
         }
       },
-      "id": "c3d4e5f6-0003-0003-0003-000000000005",
+      "id": "7a3534e2-98d6-4344-94a3-06f1eecfc00c",
       "name": "Airtable — Rechercher",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2,
-      "position": [1120, 300],
+      "position": [520, -416],
       "credentials": {
         "airtableTokenApi": {
-          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
-          "name": "Airtable Pellet CRM"
+          "id": "IkiW3kNGODfylx4P",
+          "name": "Airtable cyril"
         }
       }
     },
     {
       "parameters": {
         "operation": "upsert",
-        "base": { "__rl": true, "value": "appB7GjlNkBXiZjB2", "mode": "id" },
-        "table": { "__rl": true, "value": "tblHe0EZznaMuFqtF", "mode": "id" },
+        "base": {
+          "__rl": true,
+          "value": "appB7GjlNkBXiZjB2",
+          "mode": "list",
+          "cachedResultName": "Pellet CRM",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHe0EZznaMuFqtF",
+          "mode": "list",
+          "cachedResultName": "Contacts",
+          "cachedResultUrl": "https://airtable.com/appB7GjlNkBXiZjB2/tblHe0EZznaMuFqtF"
+        },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
@@ -102,6 +126,7 @@
             "Groupement": "={{ $('Parse + Formule').first().json['Groupement'] }}",
             "Forme juridique": "={{ $('Parse + Formule').first().json['Forme juridique'] }}",
             "Activité principale": "={{ $('Parse + Formule').first().json['Activité principale'] }}",
+            "Famille": "={{ $('Parse + Formule').first().json['Famille'] }}",
             "Email de contact": "={{ $('Parse + Formule').first().json['Email de contact'] }}",
             "Numéro de téléphone": "={{ $('Parse + Formule').first().json['Numéro de téléphone'] }}",
             "Numéro de portable": "={{ $('Parse + Formule').first().json['Numéro de portable'] }}",
@@ -114,21 +139,21 @@
             "Origine contact": "={{ $('Parse + Formule').first().json['Origine contact'] }}",
             "Conditions de livraisons": "={{ $('Parse + Formule').first().json['Conditions de livraisons'] }}"
           },
+          "matchingColumns": ["Email de contact"],
           "schema": [],
           "ignoreUnknownFields": true
         },
-        "fieldsToMatchOn": { "fieldNames": ["Email de contact"] },
         "options": {}
       },
-      "id": "c3d4e5f6-0003-0003-0003-000000000006",
+      "id": "17a90a01-3637-4b19-bb13-8ff8e87c2e4a",
       "name": "Airtable — Sauvegarder",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [740, -416],
       "credentials": {
         "airtableTokenApi": {
-          "id": "REMPLACE_PAR_TON_ID_AIRTABLE",
-          "name": "Airtable Pellet CRM"
+          "id": "IkiW3kNGODfylx4P",
+          "name": "Airtable cyril"
         }
       }
     },
@@ -136,24 +161,26 @@
       "parameters": {
         "jsCode": "const recherche = $('Airtable — Rechercher').all();\nconst existait = recherche.length > 0 && recherche[0].json.id;\nconst upsert = $input.first().json;\nconst client = $('Parse + Formule').first().json;\n\nreturn [{ json: {\n  success: true,\n  action: existait ? 'updated' : 'created',\n  airtable_id: upsert.id,\n  client: {\n    Nom: client.Nom,\n    Prénom: client.Prénom,\n    'Email de contact': client['Email de contact'],\n    Ville: client.Ville\n  }\n} }];"
       },
-      "id": "c3d4e5f6-0003-0003-0003-000000000007",
+      "id": "fbd6b651-c9c4-4674-9f71-6ebfa9a4c647",
       "name": "Prépare Réponse",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 300]
+      "position": [960, -416]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}"
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
       },
-      "id": "c3d4e5f6-0003-0003-0003-000000000008",
+      "id": "31c800b0-df22-443b-a3de-853353be6596",
       "name": "Réponse",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1780, 300]
+      "position": [1180, -416]
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook": { "main": [[{ "node": "Valide", "type": "main", "index": 0 }]] },
     "Valide": { "main": [[{ "node": "Claude — Extraire", "type": "main", "index": 0 }]] },
@@ -165,6 +192,9 @@
   },
   "active": false,
   "settings": { "executionOrder": "v1" },
-  "tags": [{ "name": "pellet-distribution" }],
-  "meta": { "templateId": "pellet-fiche-client" }
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "db7226f0e75c8049ad6d45ec7c04da9b90d79c8b25d32272a66ca65ff3aac5c6"
+  },
+  "tags": []
 }
